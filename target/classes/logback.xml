@@ -1,0 +1,28 @@
+<?xml version="1.0"?>  
+<configuration>  
+  
+    <!-- ch.qos.logback.core.ConsoleAppender -->  
+    <appender name="console" class="ch.qos.logback.core.ConsoleAppender">  
+        <encoder>  
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} - [%level] - %msg%n </pattern>  
+        </encoder>  
+    </appender>  
+   
+    <!-- ch.qos.logback.core.rolling.RollingFileAppender -->  
+    <!-- <appender name="file" class="ch.qos.logback.core.FileAppender"> 
+　　　　　　　　<file>logs/testFile.log</file> 
+　　　　　　　　<append>false</append> 
+　　　　　　　　<encoder> 
+　　　　　　　　　　<pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} - [%level] - %msg%n </pattern> 
+　　　　　　　　</encoder> 
+　　　</appender> -->
+  
+    <!-- log level -->  
+    <root>  
+        <level value="error" />  
+        <level value="info" />  
+        <appender-ref ref="console" />  
+        <!--<appender-ref ref="file" /> -->
+    </root>  
+  
+</configuration> 

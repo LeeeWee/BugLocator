@@ -11,9 +11,40 @@
   <url>http://maven.apache.org</url>
 
   <properties>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  	<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  	<nd4j.backend>nd4j-native-platform</nd4j.backend>
+  
+  	<nd4j.version>0.8.0</nd4j.version>
+  	<dl4j.version>0.8.0</dl4j.version>
   </properties>
-
+  
+  <build>
+	<plugins>
+	  <plugin>
+	  	<artifactId> maven-assembly-plugin </artifactId>
+		<configuration>
+		  <descriptorRefs>
+		    <descriptorRef>jar-with-dependencies</descriptorRef>
+		  </descriptorRefs>
+		  <archive>
+			<!-- <manifest>
+				<mainClass>com.cetc.di.App</mainClass>
+			</manifest> -->
+		  </archive>
+		</configuration>
+		<executions>
+		  <execution>
+			<id>make-assembly</id>
+			<phase>package</phase>
+			<goals>
+			  <goal>single</goal>
+			</goals>
+		  </execution>
+		</executions>
+	  </plugin>
+	</plugins>
+  </build>
+  
   <dependencies>
     <dependency>
       <groupId>junit</groupId>
@@ -21,5 +52,83 @@
       <version>3.8.1</version>
       <scope>test</scope>
     </dependency>
+    
+	<dependency>
+	  <groupId>org.nd4j</groupId>
+	  <artifactId>${nd4j.backend}</artifactId>
+	  <version>${nd4j.version}</version>
+	</dependency>
+
+	<dependency>
+	  <groupId>junit</groupId>
+	  <artifactId>junit</artifactId>
+	  <version>3.8.1</version>
+	  <scope>test</scope>
+	</dependency>
+
+	<!-- https://mvnrepository.com/artifact/org.apache.poi/poi -->
+	<dependency>
+	  <groupId>org.apache.poi</groupId>
+	  <artifactId>poi</artifactId>
+	  <version>3.16</version>
+	</dependency>
+
+	<!-- https://mvnrepository.com/artifact/org.apache.poi/poi-ooxml -->
+	<dependency>
+	  <groupId>org.apache.poi</groupId>
+	  <artifactId>poi-ooxml</artifactId>
+	  <version>3.16</version>
+	</dependency>
+
+	<!-- https://mvnrepository.com/artifact/org.eclipse.jdt/org.eclipse.jdt.core -->
+	<dependency>
+	  <groupId>org.eclipse.jdt</groupId>
+	  <artifactId>org.eclipse.jdt.core</artifactId>
+	  <version>3.12.3</version>
+	</dependency>
+
+	<!-- https://mvnrepository.com/artifact/org.deeplearning4j/deeplearning4j-core -->
+	<dependency>
+	  <groupId>org.deeplearning4j</groupId>
+	  <artifactId>deeplearning4j-core</artifactId>
+	  <version>${dl4j.version}</version>
+	</dependency>
+
+	<!-- https://mvnrepository.com/artifact/org.deeplearning4j/deeplearning4j-nlp -->
+	<dependency>
+	  <groupId>org.deeplearning4j</groupId>
+	  <artifactId>deeplearning4j-nlp</artifactId>
+	  <version>${dl4j.version}</version>
+	</dependency>
+
+	<dependency>
+	  <groupId>org.slf4j</groupId>
+	  <artifactId>slf4j-api</artifactId>
+	  <version>1.7.25</version>
+	</dependency>
+	
+	<!-- https://mvnrepository.com/artifact/ch.qos.logback/logback-classic -->
+	<dependency>
+	  <groupId>ch.qos.logback</groupId>
+	  <artifactId>logback-classic</artifactId>
+	  <version>1.2.3</version>
+	</dependency>
+	
+	<!-- https://mvnrepository.com/artifact/ch.qos.logback/logback-core -->
+	<dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-core</artifactId>
+      <version>1.2.3</version>
+	</dependency>
+	
+	<!-- https://mvnrepository.com/artifact/org.slf4j/log4j-over-slf4j -->
+	<dependency>
+	  <groupId>org.slf4j</groupId>
+	  <artifactId>log4j-over-slf4j</artifactId>
+	  <version>1.7.25</version>
+	</dependency>
+	
   </dependencies>
 </project>
+
+

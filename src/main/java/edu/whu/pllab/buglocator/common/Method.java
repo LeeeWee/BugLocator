@@ -9,13 +9,15 @@ public class Method {
     private String name;
     private String returnType;
     private String params;
-    private String hashKey;
+    private String content;
+	private String hashKey;
 
     public Method() {
     	this.setSourceCodeName("");
     	this.setName("");
     	this.setReturnType("");
     	this.setParams("");
+    	this.setContent("");
     	this.setHashKey("");
     }
     
@@ -24,6 +26,7 @@ public class Method {
     	this.name = name;
     	this.returnType = returnType;
     	this.params = params;
+    	this.setContent("");
     	this.setHashKey(calculateMD5(name + " " + returnType + " " + params));
     }
 	
@@ -32,6 +35,7 @@ public class Method {
 		this.name = name;
 		this.returnType = returnType;
 		this.params = params;
+    	this.setContent("");
 		this.setHashKey(calculateMD5(name + " " + returnType + " " + params));
 	}
 	
@@ -87,6 +91,14 @@ public class Method {
 		this.params = params;
 	}
     
+    public String getContent() {
+		return content;
+	}
+
+	public void setContent(String content) {
+		this.content = content;
+	}
+	
 	public String getHashKey() {
 		return hashKey;
 	}

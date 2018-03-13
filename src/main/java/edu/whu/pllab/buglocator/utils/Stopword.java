@@ -1,6 +1,7 @@
 package edu.whu.pllab.buglocator.utils;
 
 import java.util.List;
+import java.util.Set;
 import java.util.TreeSet;
 
 import edu.whu.pllab.buglocator.Property;
@@ -8,11 +9,11 @@ import edu.whu.pllab.buglocator.Property;
 public class Stopword {
 
 	// For checking source file java term
-    private static final TreeSet<String> JAVA_KEYWORDS_STOP_WORD_SET;
+    private static final Set<String> JAVA_KEYWORDS_STOP_WORD_SET;
     // For checking source file project term
-    private static final TreeSet<String> PROJECT_KEYWORDS_STOP_WORD_SET;
+    private static final Set<String> PROJECT_KEYWORDS_STOP_WORD_SET;
     // For checking source file term and bug report
-    private static final TreeSet<String> ENG_STOP_WORDS_SET;
+    private static final Set<String> ENG_STOP_WORDS_SET;
 	
     public Stopword()
     {
@@ -61,7 +62,7 @@ public class Stopword {
         
         String projectKeywords[] = {
                 "args", "method", "main", "param",
-                "aspectj", "swt", "eclipse", "zxing", "string", "java", "org", "javadoc"
+                "aspectj", "swt", "eclipse", "birt", "platform", "tomcat", "jdt", "string", "java", "org", "javadoc"
                 };
         
         PROJECT_KEYWORDS_STOP_WORD_SET = new TreeSet<String>();

@@ -7,6 +7,16 @@ import java.util.Properties;
 
 public class Property {
 	
+	public final static String BR_INDEX_PATH = "bugReport.i";
+	public final static String BR_CORPUS_PATH = "bugReport.s";
+	public final static String BR_TFIDF_PATH = "bugReport.tfidf";
+	public final static String BR_PARAGRAPH_VECTOR_PATH = "bugReport.v";
+	public final static String CODE_INDEX_PATH = "sourceCode.i";
+	public final static String CODE_CORPUS_PATH = "sourceCode.s";
+	public final static String CODE_TFIDF_PATH = "sourceCode.tfidf";
+	public final static String CODE_PARAGRAPH_VECTOR_PATH = "sourceCode.v";
+	
+	
 	public final static int THREAD_COUNT = Runtime.getRuntime().availableProcessors();
 	public final static String STOPWORDS_PATH = Property.readProperty("STOPWORDS_PATH");
 
@@ -52,7 +62,7 @@ public class Property {
 	/**
 	 * load property by default product
 	 */
-	public static Property loadInstance() throws Exception {
+	public static Property loadInstance() {
 		String targetProduct = Property.readProperty("DEFAULT_PRODUCT");
 		return loadInstance(targetProduct);
 	}
@@ -71,14 +81,14 @@ public class Property {
 		String sourceCodeDir = Property.readProperty(targetProduct + "_" + "SOURCE_DIR");
 		String wordVectorPath = Property.readProperty(targetProduct + "_" + "WORD_VECTOR_PATH");
 		String workingDir = Property.readProperty(targetProduct + "_" + "WORK_DIR");
-		String brIndexPath = new File(workingDir, "bugReport.i").getAbsolutePath();
-		String codeIndexPath = new File(workingDir, "sourceCode.i").getAbsolutePath();
-		String brCorpusPath = new File(workingDir, "bugReport.s").getAbsolutePath();
-		String codeCorpusPath = new File(workingDir, "sourceCode.s").getAbsolutePath();
-		String brTfidfModelPath = new File(workingDir, "bugReport.tfidf").getAbsolutePath();
-		String codeTfidfModelPath = new File(workingDir, "sourceCode.tfidf").getAbsolutePath();
-		String brParagraphVectorPath = new File(workingDir, "bugReport.v").getAbsolutePath();
-		String codeParagraphVectorPath = new File(workingDir, "sourceCode.v").getAbsolutePath();
+		String brIndexPath = new File(workingDir, BR_INDEX_PATH).getAbsolutePath();
+		String codeIndexPath = new File(workingDir, CODE_INDEX_PATH).getAbsolutePath();
+		String brCorpusPath = new File(workingDir, BR_CORPUS_PATH).getAbsolutePath();
+		String codeCorpusPath = new File(workingDir, CODE_CORPUS_PATH).getAbsolutePath();
+		String brTfidfModelPath = new File(workingDir, BR_TFIDF_PATH).getAbsolutePath();
+		String codeTfidfModelPath = new File(workingDir, CODE_TFIDF_PATH).getAbsolutePath();
+		String brParagraphVectorPath = new File(workingDir, BR_PARAGRAPH_VECTOR_PATH).getAbsolutePath();
+		String codeParagraphVectorPath = new File(workingDir, CODE_PARAGRAPH_VECTOR_PATH).getAbsolutePath();
 		// set properties values
 		p.setValues(product, bugFilePath, sourceCodeDir, wordVectorPath, workingDir, brIndexPath, 
 				codeIndexPath, brCorpusPath, codeCorpusPath, brTfidfModelPath, 

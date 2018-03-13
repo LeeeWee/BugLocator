@@ -22,6 +22,8 @@ import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 
 import edu.whu.pllab.buglocator.common.Method;
 import edu.whu.pllab.buglocator.utils.Splitter;
+import edu.whu.pllab.buglocator.utils.Stemmer;
+import edu.whu.pllab.buglocator.utils.Stopword;
 
 public class FileParser {
 
@@ -30,7 +32,6 @@ public class FileParser {
 	
 	private String allClassNames;
 	private String allMethodNames;
-	private String allInnerMethodNames;
 	private String allVariableNames;
 	private String allComments;
 	private ArrayList<Method> allMethodList;
@@ -43,12 +44,10 @@ public class FileParser {
 	public FileParser(File file) {
 		allClassNames = null;
 		allMethodNames = null;
-		allInnerMethodNames = null;
 		allVariableNames = null;
 		allComments = null;
 		allMethodList = null;
 		
-		compilationUnit = null;
 		ASTCreator creator = new ASTCreator(file);
 		compilationUnit = creator.getCompilationUnit();
 		sourceString = creator.getContent();
@@ -68,142 +67,149 @@ public class FileParser {
 		return len;
 	}
 	
-	public static String[] splitContent(String content) {
+	public String getStructuredContentWithFullyIdentifier(int type) {
+		String content = "";
+		switch (type) {
+		case CLASS_PART:
+			content =  getAllClassNames();
+			break;
+		case METHOD_PART:
+			content =  getAllMethodNames();
+			break;
+		case VARIABLE_PART:
+			content =  getAllVariableNames();
+			break;
+		case COMMENT_PART:
+			content =  getAllComments();
+			break;
+		}
+		return content;
+	}
+	
+	public String getStructuredContent(int type) {
+		return splitContent(getStructuredContentWithFullyIdentifier(type));
+	}
+	
+	/**
+	 * split and stem source code file content, remove stopwords
+	 */
+	public static String splitContent(String content) {
 		String tokensInConent[] = Splitter.splitSourceCode(content);
 		StringBuffer sourceCodeContentBuffer = new StringBuffer();
 		for (int i = 0; i < tokensInConent.length; i++) {
-			String token = tokensInConent[i];
+			String token = Stemmer.stem(tokensInConent[i]);
+			if (Stopword.isEnglishStopword(token) || Stopword.isJavaKeyword(token) || Stopword.isProjectKeyword(token))
+				continue;
 			sourceCodeContentBuffer.append((new StringBuilder(String.valueOf(token))).append(" ").toString());
 		}
-
 		String processedContent = sourceCodeContentBuffer.toString().toLowerCase();
-		return processedContent.split(" ");
+		return processedContent;
 	}
 	
-	public String[] getStructuredContentWithFullyIdentifier(int type) {
-		String content = "";
-		
-		switch (type) {
-		case CLASS_PART:
-			content =  getAllClassNames();
-			break;
-		case METHOD_PART:
-			content =  getAllMethodNames();
-			if (getAllMethodNames().length() != 0) {
-				content += " ";
-			}
-			content += getAllInnerMethodNames();
-			break;
-		case VARIABLE_PART:
-			content =  getAllVariableNames();
-			break;
-		case COMMENT_PART:
-			content =  getAllComments();
-			break;
-		}
-		
-		content = content.toLowerCase();
-		return content.split(" ");
+	/**
+	 * get source code file content
+	 */
+	public String getContent() {
+		return splitContent(deleteNoNeededNode());
 	}
 	
-	
-	public String[] getStructuredContent(int type) {
-		String content = "";
-		
-		switch (type) {
-		case CLASS_PART:
-			content =  getAllClassNames();
-			break;
-		case METHOD_PART:
-			content =  getAllMethodNames();
-			if (getAllMethodNames().length() != 0) {
-				content += " ";
-			}
-			content += getAllInnerMethodNames();
-			break;
-		case VARIABLE_PART:
-			content =  getAllVariableNames();
-			break;
-		case COMMENT_PART:
-			content =  getAllComments();
-			break;
-		}
-		
-		return splitContent(content);
-	}
-	
-	public String[] getContent() {
-		String tokensInSourceCode[] = Splitter.splitSourceCode(deleteNoNeededNode());
-		StringBuffer sourceCodeContentBuffer = new StringBuffer();
-		for (int i = 0; i < tokensInSourceCode.length; i++) {
-			String token = tokensInSourceCode[i];
-			sourceCodeContentBuffer.append((new StringBuilder(String.valueOf(token))).append(" ").toString());
-		}
-
-		String content = sourceCodeContentBuffer.toString().toLowerCase();
-		return content.split(" ");
-	}
-	
-	public String[] getClassNameAndMethodName() {
-		String content = (new StringBuilder(String.valueOf(getAllClassNames()))).append(" ")
-				.append(getAllMethodNames()).append(" ").toString().toLowerCase();
-		return content.split(" ");
-	}
-
+	/**
+	 * get package name
+	 */
 	public String getPackageName() {
 		return compilationUnit.getPackage() != null ?
 				compilationUnit.getPackage().getName().getFullyQualifiedName() : "";
 	}
 	
-	private String getAllInnerMethodNames() {
-		if (allInnerMethodNames != null) {
-			return allInnerMethodNames;
+	/**
+	 * get imported classes list 
+	 */
+    public ArrayList<String> getImportedClasses() {
+    	final ArrayList<String> importedClasses = new ArrayList<String>();
+    	
+    	compilationUnit.accept(new ASTVisitor() {
+            public boolean visit(ImportDeclaration node)
+            {
+            	importedClasses.add(node.getName().toString());
+                return super.visit(node);
+            }
+    	});
+    	
+    	return importedClasses;
+    }
+	
+    /**
+     * get all class names
+     */
+	public String getAllClassNames() {
+		if (allClassNames != null) {
+			return allClassNames;
 		} else {
-	    	final ArrayList<String> innerMethodNameList = new ArrayList<String>();
-	    	
-	    	compilationUnit.accept(new ASTVisitor() {
+			allClassNames = "";
+		   	compilationUnit.accept(new ASTVisitor() {
 	    		public boolean visit(TypeDeclaration type) {
-	    		    if (!type.isPackageMemberTypeDeclaration()) {
-    		            
-    					MethodDeclaration methodDecls[] = type.getMethods();
-    					MethodDeclaration methodDeclaration[];
-    					int k = (methodDeclaration = methodDecls).length;
-    					for (int j = 0; j < k; j++) {
-    						MethodDeclaration methodDecl = methodDeclaration[j];
-    						String methodName = methodDecl.getName().getFullyQualifiedName();
-    						
-    						Type returnType = methodDecl.getReturnType2();
-    						String returnTypeString = (returnType == null) ? "" : returnType.toString();
-    						
-    						String parameters = "";
-    						for (int l = 0; l < methodDecl.parameters().size(); l++) {
-    							parameters += ((SingleVariableDeclaration) methodDecl.parameters().get(l)).getType().toString();
-    							parameters += " ";
-    						}
-    						parameters = parameters.trim();
-    						
-    						Method method = new Method(methodName, returnTypeString, parameters);
-    						allMethodList.add(method);
-    						
-    						innerMethodNameList.add(methodName);
-    					}
-	    		    }
+	    			allClassNames += type.getName() + " ";
 	    		    return super.visit(type);
 	    		}
 	    	});
-	    	
-	    	allInnerMethodNames = "";
-			for (Iterator<String> iterator = innerMethodNameList.iterator(); iterator.hasNext();) {
-				String structuredInfoName = (String) iterator.next();
-				allInnerMethodNames = (new StringBuilder(String.valueOf(allInnerMethodNames)))
-						.append(structuredInfoName).append(" ").toString();
-			}
-		
-			allInnerMethodNames = allInnerMethodNames.trim(); 
-			return allInnerMethodNames;	
+			allClassNames = allClassNames.trim();
+			return allClassNames;
 		}
 	}
 	
+	/**
+	 * get all method names, and save method to method list
+	 */
+	public String getAllMethodNames() {
+		if (allMethodNames != null) {
+			return allMethodNames;
+		} else {
+			allMethodList = new ArrayList<Method>();
+	    	compilationUnit.accept(new ASTVisitor() {
+	    		public boolean visit(MethodDeclaration methodDecl) {
+					String methodName = methodDecl.getName().getFullyQualifiedName();
+					Type returnType = methodDecl.getReturnType2();
+					String returnTypeString = (returnType == null) ? "" : returnType.toString();
+					// get parameters
+					String parameters = "";
+					for (int l = 0; l < methodDecl.parameters().size(); l++) {
+						parameters += ((SingleVariableDeclaration) methodDecl.parameters().get(l)).getType().toString();
+						parameters += " ";
+					}
+					parameters = parameters.trim();
+					Method method = new Method(methodName, returnTypeString, parameters);
+					// split method content
+					method.setContent(splitContent(methodDecl.toString()));
+					allMethodList.add(method);
+					return super.visit(methodDecl);
+	    		}
+	    	});
+			allMethodNames = "";
+			for (Iterator<Method> iterator = allMethodList.iterator(); iterator.hasNext();) {
+				String methodName = (String) iterator.next().getName();
+				allMethodNames = (new StringBuilder(String.valueOf(allMethodNames)))
+						.append(methodName).append(" ").toString();
+			}
+			allMethodNames = allMethodNames.trim();
+			return allMethodNames;
+		}
+	}
+	
+	/**
+	 * get all method list
+	 */
+	public ArrayList<Method> getAllMethodList() {
+		if (allMethodList != null) {
+			return allMethodList;
+		} else {
+			getAllMethodNames();
+			return allMethodList;
+		}
+	}
+	
+	/**
+	 * get all variable names
+	 */
 	public String getAllVariableNames() {
 		if (allVariableNames != null) {
 			return allVariableNames;
@@ -213,7 +219,6 @@ public class FileParser {
 	    	compilationUnit.accept(new ASTVisitor() {
 	            public boolean visit(SingleVariableDeclaration node)
 	            {
-//	            	System.out.printf("single variable Node: %s\n", node.getName().getIdentifier());
 	            	structuredInfoList.add(node.getName().getIdentifier());
 	                return super.visit(node);
 	            }
@@ -222,7 +227,6 @@ public class FileParser {
 	    	compilationUnit.accept(new ASTVisitor() {
 	            public boolean visit(VariableDeclarationFragment node)
 	            {
-//	            	System.out.printf("variable declaration Node: %s\n", node.getName().getIdentifier());
 	            	structuredInfoList.add(node.getName().getIdentifier());
 	                return super.visit(node);
 	            }
@@ -239,17 +243,7 @@ public class FileParser {
 			return allVariableNames;	
 		}
 	}
-	
-	private String replaceHtmlSpecicalCharacters(String line) {
-		line = line.replace("&quot;", "\"");
-		line = line.replace("&amp;", "&");
-		line = line.replace("&lt;", "<");
-		line = line.replace("&gt;", ">");
-		line = line.replace("&nbsp;", " ");
-		
-		return line;
-	}
-	
+
 	@SuppressWarnings("unchecked")
 	public String getAllComments() {
 		if (allComments != null) {
@@ -275,7 +269,6 @@ public class FileParser {
 	                    		}
 	                    		
 	                    		line = replaceHtmlSpecicalCharacters(line);
-
 	                    		// Split line with space and html tag
 	                        	String[] words = line.split("([*\\s]|(?i)\\<[^\\>]*\\>)");
 	                        	for (String word : words) {
@@ -363,88 +356,16 @@ public class FileParser {
 		}
 	}
 	
-	
-	public ArrayList<Method> getAllMethodList() {
-		if (allMethodList != null) {
-			return allMethodList;
-		} else {
-			getAllMethodNames();
-			getAllInnerMethodNames();
-			return allMethodList;
-		}
+	private String replaceHtmlSpecicalCharacters(String line) {
+		line = line.replace("&quot;", "\"");
+		line = line.replace("&amp;", "&");
+		line = line.replace("&lt;", "<");
+		line = line.replace("&gt;", ">");
+		line = line.replace("&nbsp;", " ");
+		
+		return line;
 	}
 
-	private String getAllMethodNames() {
-		if (allMethodNames != null) {
-			return allMethodNames;
-		} else {
-			ArrayList<String> methodNameList = new ArrayList<String>();
-			allMethodList = new ArrayList<Method>();
-			for (int i = 0; i < compilationUnit.types().size(); i++) {
-				if (compilationUnit.types().get(i) instanceof TypeDeclaration) {
-					TypeDeclaration type = (TypeDeclaration) compilationUnit.types().get(i);
-					MethodDeclaration methodDecls[] = type.getMethods();
-					MethodDeclaration methodDeclaration[];
-					int k = (methodDeclaration = methodDecls).length;
-					for (int j = 0; j < k; j++) {
-						MethodDeclaration methodDecl = methodDeclaration[j];
-						String methodName = methodDecl.getName().getFullyQualifiedName();
-						
-						Type returnType = methodDecl.getReturnType2();
-						String returnTypeString = (returnType == null) ? "" : returnType.toString();
-						
-						String parameters = "";
-						for (int l = 0; l < methodDecl.parameters().size(); l++) {
-							parameters += ((SingleVariableDeclaration) methodDecl.parameters().get(l)).getType().toString();
-							parameters += " ";
-						}
-						parameters = parameters.trim();
-						
-						// debug code
-						Method method = new Method(methodName, returnTypeString, parameters);
-						allMethodList.add(method);
-						
-						methodNameList.add(methodName);
-					}
-				}
-			}
-
-			allMethodNames = "";
-			for (Iterator<String> iterator = methodNameList.iterator(); iterator.hasNext();) {
-				String methodName = (String) iterator.next();
-				allMethodNames = (new StringBuilder(String.valueOf(allMethodNames)))
-						.append(methodName).append(" ").toString();
-			}
-
-			allMethodNames = allMethodNames.trim();
-			return allMethodNames;
-		}
-	}
-	
-	private String getAllClassNames() {
-		if (allClassNames != null) {
-			return allClassNames;
-		} else {
-			ArrayList<String> classNameList = new ArrayList<String>();
-			
-			for (int i = 0; i < compilationUnit.types().size(); i++) {
-				if (compilationUnit.types().get(i) instanceof TypeDeclaration) {
-					TypeDeclaration type = (TypeDeclaration) compilationUnit.types().get(i);
-					String name = type.getName().getFullyQualifiedName();
-					classNameList.add(name);
-				}
-			}
-
-			allClassNames = "";
-			for (Iterator<String> iterator = classNameList.iterator(); iterator.hasNext();) {
-				String className = (String) iterator.next();
-				allClassNames = (new StringBuilder(String.valueOf(allClassNames))).append(className).append(" ").toString();
-			}
-			
-			allClassNames = allClassNames.trim();
-			return allClassNames;
-		}
-	}
 
 	/**
 	 * delete PackageMemberType, Package and Import declaration
@@ -475,20 +396,5 @@ public class FileParser {
 		
 		return compilationUnit.toString();
 	}
-	
-    public ArrayList<String> getImportedClasses()
-    {
-    	final ArrayList<String> importedClasses = new ArrayList<String>();
-    	
-    	compilationUnit.accept(new ASTVisitor() {
-            public boolean visit(ImportDeclaration node)
-            {
-            	importedClasses.add(node.getName().toString());
-                return super.visit(node);
-            }
-    	});
-    	
-    	return importedClasses;
-    }
 	
 }

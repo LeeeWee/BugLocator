@@ -5,7 +5,6 @@ import java.security.NoSuchAlgorithmException;
 
 public class Method {
 
-	private String sourceCodeName;
     private String name;
     private String returnType;
     private String params;
@@ -13,7 +12,6 @@ public class Method {
 	private String hashKey;
 
     public Method() {
-    	this.setSourceCodeName("");
     	this.setName("");
     	this.setReturnType("");
     	this.setParams("");
@@ -22,7 +20,6 @@ public class Method {
     }
     
 	public Method(String name, String returnType, String params) {
-		this.setSourceCodeName("");
     	this.name = name;
     	this.returnType = returnType;
     	this.params = params;
@@ -31,7 +28,6 @@ public class Method {
     }
 	
 	public Method(String sourceCodeName, String name, String returnType, String params) {
-		this.setSourceCodeName(sourceCodeName);
 		this.name = name;
 		this.returnType = returnType;
 		this.params = params;
@@ -59,14 +55,6 @@ public class Method {
     }
 	
     
-    public String getSourceCodeName() {
-		return sourceCodeName;
-	}
-
-	public void setSourceCodeName(String sourceCodeName) {
-		this.sourceCodeName = sourceCodeName;
-	}
-
 	public String getName() {
 		return name;
 	}

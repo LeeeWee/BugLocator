@@ -94,10 +94,10 @@ public class FileParser {
 	 * split and stem source code file content, remove stopwords
 	 */
 	public static String splitContent(String content) {
-		String tokensInConent[] = Splitter.splitSourceCode(content);
+		String tokensInContent[] = Splitter.splitSourceCode(content);
 		StringBuffer sourceCodeContentBuffer = new StringBuffer();
-		for (int i = 0; i < tokensInConent.length; i++) {
-			String token = Stemmer.stem(tokensInConent[i]);
+		for (int i = 0; i < tokensInContent.length; i++) {
+			String token = Stemmer.stem(tokensInContent[i]);
 			if (Stopword.isEnglishStopword(token) || Stopword.isJavaKeyword(token) || Stopword.isProjectKeyword(token))
 				continue;
 			sourceCodeContentBuffer.append((new StringBuilder(String.valueOf(token))).append(" ").toString());

@@ -4,6 +4,7 @@ import edu.whu.pllab.buglocator.Property;
 import edu.whu.pllab.buglocator.common.BugReportRepository;
 
 public class BugReportRepositoryTest {
+	@SuppressWarnings("unused")
 	public static void main(String[] args) {
 		Property property = Property.loadInstance();
 		BugReportRepository brRepo = new BugReportRepository();

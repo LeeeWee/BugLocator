@@ -30,6 +30,12 @@ public class SourceCodeCorpus {
 		this.contentTokens = new HashMap<String, TokenScore>();
 	}
 	
+	public SourceCodeCorpus(String content) {
+		this.content = content;
+		this.contentNorm = 0.0;
+		this.contentTokens = new HashMap<String, TokenScore>();
+	}
+	
 	
 	public String getContent() {
 		return content;

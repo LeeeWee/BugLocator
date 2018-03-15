@@ -20,7 +20,8 @@
     <!-- log level -->  
     <root>  
         <level value="error" />  
-        <level value="info" />  
+        <level value="info" /> 
+        <level value="debug"/> 
         <appender-ref ref="console" />  
         <!--<appender-ref ref="file" /> -->
     </root>  

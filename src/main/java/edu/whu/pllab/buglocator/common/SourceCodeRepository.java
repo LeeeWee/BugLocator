@@ -3,6 +3,7 @@ package edu.whu.pllab.buglocator.common;
 import java.io.File;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -37,6 +38,7 @@ public class SourceCodeRepository {
 		sourceCodeDirNameLength = new File(sourceCodeDir).getAbsolutePath().length();
 		sourceCodeMaps = new HashMap<String, SourceCode>();
 		loadSourceCodeFiles(sourceCodeDir);
+		computeLengthScore();
 	}
 	
 	/**
@@ -61,6 +63,7 @@ public class SourceCodeRepository {
 		sourceCodeDirNameLength = new File(sourceCodeDir).getAbsolutePath().length();
 		sourceCodeMaps = new HashMap<String, SourceCode>();
 		loadSourceCodeFiles(sourceCodeDir);
+		computeLengthScore();
 	}
 	
 	/**
@@ -84,6 +87,7 @@ public class SourceCodeRepository {
 		logger.info("Finished parsing, total " + javaFiles.size() + " java files.");
 	}
 	
+	/** worker parsing source code file */
 	private class WorkerThread implements Runnable {
 		
 		private String filePath;
@@ -118,6 +122,71 @@ public class SourceCodeRepository {
 				sourceCodeMaps.put(sourceCode.getPath(), sourceCode);
 			}
 		}
+	}
+	
+	/** compute length score for source code file */
+	public void computeLengthScore() {
+		HashMap<String, Integer> corpusLensTable = new HashMap<String, Integer>();
+		int max = Integer.MIN_VALUE;
+		int count = 0, sum = 0;
+		for (Entry<String, SourceCode> entry : sourceCodeMaps.entrySet()) {
+			String content = entry.getValue().getSourceCodeCorpus().getContent();
+			int lens = content.split(" ").length;
+			corpusLensTable.put(entry.getKey(), lens);
+			if (lens != 0) {
+				count++;
+			}
+			if (lens > max) {
+				max = lens;
+			}
+			sum += lens;
+		}
+		double average = (double) sum / (double) count;
+		double squareDevi = 0.0D;
+		for (Integer lens : corpusLensTable.values()) {
+			squareDevi += ((double)lens - average) * ((double)lens - average);
+		}
+		double standardDevi = Math.sqrt(squareDevi / (double) count);
+		double low = average - 3D * standardDevi;
+		double high = average + 3D * standardDevi;
+		int min = 0;
+		if (low > 0.0D) {
+			min = (int) low;
+		}
+		for (Entry<String, Integer> entry : corpusLensTable.entrySet()) {
+			String filePath = entry.getKey();
+			int lens = entry.getValue();
+			double score = 0.0D;
+			double nor = getNormalizedValue(lens, high, min);
+			if (lens != 0) {
+				if ((double) lens > low && (double) lens < high) {
+					score = getLengthScore(nor);
+				} else if ((double) lens < low) {
+					score = 0.5D;
+				} else {
+					score = 1.0D;
+				}
+			} else {
+				score = 0.0D;
+			}
+			if (nor > 6D) {
+				nor = 6D;
+			}
+			if (score < 0.5D) {
+				score = 0.5D;
+			}
+			sourceCodeMaps.get(filePath).setLengthScore(score);
+		}
+	}
+	
+	/** Get normalized value of x from Max. to min. */
+	private double getNormalizedValue(int x, double max, double min) {
+		return (6F * (x - min)) / (max - min);
+	}
+
+	/** Get length score */
+	public double getLengthScore(double len) {
+		return Math.exp(len) / (1.0D + Math.exp(len));
 	}
 	
 

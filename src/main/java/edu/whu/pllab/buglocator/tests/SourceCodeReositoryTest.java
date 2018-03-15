@@ -2,7 +2,6 @@ package edu.whu.pllab.buglocator.tests;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
-import java.io.IOException;
 import java.util.Map.Entry;
 
 import edu.whu.pllab.buglocator.Property;
@@ -15,6 +14,7 @@ public class SourceCodeReositoryTest {
 	public static void main(String[] args) throws Exception {
 		String output = "D:\\data\\sourceCodeRepositoryTest.txt";
 		
+		@SuppressWarnings("unused")
 		Property property = Property.loadInstance();
 		SourceCodeRepository repo = new SourceCodeRepository();
 		
@@ -29,6 +29,7 @@ public class SourceCodeReositoryTest {
 			builder.append("Path: " + entry.getKey() + "\n");
 			builder.append("FullClassName: " + sourceCode.getFullClassName() + "\n");
 			builder.append("Content: " + sourceCode.getSourceCodeCorpus().getContent() + "\n");
+			builder.append("LengthScore: " + sourceCode.getLengthScore() + "\n");
 			builder.append("Methods: " + "\n");
 			for (Method method : sourceCode.getMethodList()) {
 				builder.append("\tMethodName: " + method.getName() + "\tParams: " + 

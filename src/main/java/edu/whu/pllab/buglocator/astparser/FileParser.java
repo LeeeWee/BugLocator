@@ -97,13 +97,12 @@ public class FileParser {
 		String tokensInContent[] = Splitter.splitSourceCode(content);
 		StringBuffer sourceCodeContentBuffer = new StringBuffer();
 		for (int i = 0; i < tokensInContent.length; i++) {
-			String token = Stemmer.stem(tokensInContent[i]);
+			String token = Stemmer.stem(tokensInContent[i].toLowerCase());
 			if (Stopword.isEnglishStopword(token) || Stopword.isJavaKeyword(token) || Stopword.isProjectKeyword(token))
 				continue;
 			sourceCodeContentBuffer.append((new StringBuilder(String.valueOf(token))).append(" ").toString());
 		}
-		String processedContent = sourceCodeContentBuffer.toString().toLowerCase();
-		return processedContent;
+		return sourceCodeContentBuffer.toString();
 	}
 	
 	/**

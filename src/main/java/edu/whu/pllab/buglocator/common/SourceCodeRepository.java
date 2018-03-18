@@ -25,7 +25,7 @@ public class SourceCodeRepository {
 	/** source code repository commit version */
 	private String version;
 	
-	private HashMap<String, SourceCode> sourceCodeMaps;
+	private HashMap<String, SourceCode> SourceCodeMap;
 	
 	/** use file's absolutePath substring(sourceCodeDirNameLength+1) as file path*/
 	private int sourceCodeDirNameLength;
@@ -36,7 +36,7 @@ public class SourceCodeRepository {
 		String sourceCodeDir = property.getSourceCodeDir();
 		// initialize sourceCodeDirNameLength and sourceCodeMaps before loadSourceCodeFiles
 		sourceCodeDirNameLength = new File(sourceCodeDir).getAbsolutePath().length();
-		sourceCodeMaps = new HashMap<String, SourceCode>();
+		SourceCodeMap = new HashMap<String, SourceCode>();
 		loadSourceCodeFiles(sourceCodeDir);
 		computeLengthScore();
 	}
@@ -61,7 +61,7 @@ public class SourceCodeRepository {
 		}
 		// initialize sourceCodeDirNameLength and sourceCodeMaps before loadSourceCodeFiles
 		sourceCodeDirNameLength = new File(sourceCodeDir).getAbsolutePath().length();
-		sourceCodeMaps = new HashMap<String, SourceCode>();
+		SourceCodeMap = new HashMap<String, SourceCode>();
 		loadSourceCodeFiles(sourceCodeDir);
 		computeLengthScore();
 	}
@@ -118,18 +118,19 @@ public class SourceCodeRepository {
 			SourceCodeCorpus sourceCodeCorpus = new SourceCodeCorpus(parser.getContent());
 			sourceCode.setSourceCodeCorpus(sourceCodeCorpus);
 			// put to map
-			synchronized(sourceCodeMaps) {
-				sourceCodeMaps.put(sourceCode.getPath(), sourceCode);
+			synchronized(SourceCodeMap) {
+				SourceCodeMap.put(sourceCode.getPath(), sourceCode);
 			}
 		}
 	}
 	
 	/** compute length score for source code file */
 	public void computeLengthScore() {
+		logger.info("Calculating source code file length score...");
 		HashMap<String, Integer> corpusLensTable = new HashMap<String, Integer>();
 		int max = Integer.MIN_VALUE;
 		int count = 0, sum = 0;
-		for (Entry<String, SourceCode> entry : sourceCodeMaps.entrySet()) {
+		for (Entry<String, SourceCode> entry : SourceCodeMap.entrySet()) {
 			String content = entry.getValue().getSourceCodeCorpus().getContent();
 			int lens = content.split(" ").length;
 			corpusLensTable.put(entry.getKey(), lens);
@@ -175,7 +176,7 @@ public class SourceCodeRepository {
 			if (score < 0.5D) {
 				score = 0.5D;
 			}
-			sourceCodeMaps.get(filePath).setLengthScore(score);
+			SourceCodeMap.get(filePath).setLengthScore(score);
 		}
 	}
 	
@@ -199,11 +200,11 @@ public class SourceCodeRepository {
 	}
 
 	public HashMap<String, SourceCode> getSourceCodeMaps() {
-		return sourceCodeMaps;
+		return SourceCodeMap;
 	}
 
 	public void setSourceCodeMaps(HashMap<String, SourceCode> sourceCodeMaps) {
-		this.sourceCodeMaps = sourceCodeMaps;
+		this.SourceCodeMap = sourceCodeMaps;
 	}
 
 	

@@ -9,6 +9,7 @@ public class BugReportCorpus {
 	
 	/** summary after splitting, stemming and removing stopwords*/
 	private String summaryPart;
+	
 	/** description after splitting, stemming and removing stopwords*/
 	private String descriptionPart;
 	
@@ -22,6 +23,14 @@ public class BugReportCorpus {
 		this.content = "";
 		this.summaryPart = "";
 		this.descriptionPart = "";
+		this.contentNorm = 0.0;
+		this.contentTokens = new HashMap<String, TokenScore>();
+	}
+	
+	public BugReportCorpus(String summaryPart, String descriptionPart) {
+		this.content = "";
+		this.summaryPart = summaryPart;
+		this.descriptionPart = descriptionPart;
 		this.contentNorm = 0.0;
 		this.contentTokens = new HashMap<String, TokenScore>();
 	}

@@ -43,15 +43,19 @@ public class SourceCodeCorpus {
 	public void setContent(String content) {
 		this.content = content;
 	}
+	
 	public double getContentNorm() {
 		return contentNorm;
 	}
+	
 	public void setContentNorm(double contentNorm) {
 		this.contentNorm = contentNorm;
 	}
+	
 	public HashMap<String, TokenScore> getContentTokens() {
 		return contentTokens;
 	}
+	
 	public void setContentTokens(HashMap<String, TokenScore> contentTokens) {
 		this.contentTokens = contentTokens;
 	}

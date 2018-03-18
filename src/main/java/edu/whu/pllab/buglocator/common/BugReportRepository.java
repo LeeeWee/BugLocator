@@ -7,6 +7,9 @@ import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Map.Entry;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.TreeSet;
 
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
@@ -19,6 +22,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import edu.whu.pllab.buglocator.Property;
+import edu.whu.pllab.buglocator.utils.Splitter;
+import edu.whu.pllab.buglocator.utils.Stemmer;
+import edu.whu.pllab.buglocator.utils.Stopword;
 
 public class BugReportRepository {
 	
@@ -31,10 +37,11 @@ public class BugReportRepository {
 		Property property = Property.getInstance();
 		String brExcelPath = property.getBugFilePath();
 		bugReports = parseExcel(new File(brExcelPath));
+		cleanText();
 	}
 	
 	/** get BugReportsMap */
-	public HashMap<Integer, BugReport> get() {
+	public HashMap<Integer, BugReport> getBugReports() {
 		return bugReports;
 	}
 
@@ -62,7 +69,7 @@ public class BugReportRepository {
 	        for (int r = 1; r < rowCount; r++) {
 	        	Row row = sheet.getRow(r);
 	        	int bugID = Integer.parseInt(cellValue2String(row.getCell(1)));
-	        	String summart = cellValue2String(row.getCell(2));
+	        	String summary = cellValue2String(row.getCell(2)).replaceAll("^Bug \\d+ ", "");
 	        	String description = cellValue2String(row.getCell(3));
 	        	String commitID = cellValue2String(row.getCell(7));
 	        	// parse report date
@@ -75,7 +82,7 @@ public class BugReportRepository {
 	        	// extract modified files
 	        	String filesString = cellValue2String(row.getCell(9));
 	        	TreeSet<String> fixedFiles = extractFilesFromString(filesString);
-	        	BugReport bugReport = new BugReport(bugID, summart, description, reportTime, commitID, commitTime, fixedFiles);
+	        	BugReport bugReport = new BugReport(bugID, summary, description, reportTime, commitID, commitTime, fixedFiles);
 	        	bugReports.put(bugID, bugReport);
 	        }
 	        logger.info("Finished parsing, total " + bugReports.size() + " bug reports.");
@@ -105,7 +112,51 @@ public class BugReportRepository {
 	            return " ";  
 	        }  
 		}
-	}	
+	}
+	
+	/** set bug report corpus for all bug reports */
+	public void cleanText() {
+		ExecutorService executor = Executors.newFixedThreadPool(Property.THREAD_COUNT);
+		for (Entry<Integer, BugReport> entry : bugReports.entrySet()) {
+			Runnable worker = new WorkerThread(entry.getValue());
+			executor.execute(worker);			
+		}
+		executor.shutdown();
+		while (!executor.isTerminated()) {
+		}
+	}
+	
+	/** worker splitting and stemming bugReport summary and description ,and setting BugReportCorpus content */
+	private class WorkerThread implements Runnable {
+		private BugReport bugReport;
+		public WorkerThread(BugReport bugReport) {
+			this.bugReport = bugReport;
+		}
+		public void run() {
+			String summaryPart = cleanText(bugReport.getSummary());
+			String descriptionPart = cleanText(bugReport.getDescription());
+			BugReportCorpus bugReportCorpus = new BugReportCorpus(summaryPart, descriptionPart);
+			bugReportCorpus.setContent(summaryPart + " " + descriptionPart);
+			bugReport.setBugReportCorpus(bugReportCorpus);
+		}
+	}
+	
+	 /** split, stem and remove stopwords for given text */
+	public String cleanText(String text) {
+		String[] content = Splitter.splitNatureLanguageEx(text);
+		StringBuffer contentBuf = new StringBuffer();
+		for (int i = 0; i < content.length; i++) {
+			String word = content[i].toLowerCase();
+			if (word.length() > 0) {
+				String stemWord = Stemmer.stem(word);
+				if (!Stopword.isEnglishStopword(stemWord) && !Stopword.isProjectKeyword(stemWord)) {
+					contentBuf.append(stemWord);
+					contentBuf.append(" ");
+				}
+			}
+		}
+		return contentBuf.toString();
+	}
 	
 	/** split string and get files */
 	private TreeSet<String> extractFilesFromString(String filesString) {

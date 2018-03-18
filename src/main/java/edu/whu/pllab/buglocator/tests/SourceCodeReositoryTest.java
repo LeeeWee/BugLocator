@@ -8,16 +8,21 @@ import edu.whu.pllab.buglocator.Property;
 import edu.whu.pllab.buglocator.common.Method;
 import edu.whu.pllab.buglocator.common.SourceCode;
 import edu.whu.pllab.buglocator.common.SourceCodeRepository;
+import edu.whu.pllab.buglocator.common.TokenScore;
+import edu.whu.pllab.buglocator.vectorizer.SourceCodeTfidfVectorizer;
 
 public class SourceCodeReositoryTest {
 
 	public static void main(String[] args) throws Exception {
-		String output = "D:\\data\\sourceCodeRepositoryTest.txt";
+//		String output = "D:\\data\\sourceCodeRepositoryTest.txt";
+		String output = "/Users/liwei/Documents/defect-prediction/working/SourceCodeTest.txt";
 		
 		@SuppressWarnings("unused")
 		Property property = Property.loadInstance();
 		SourceCodeRepository repo = new SourceCodeRepository();
-		
+		SourceCodeTfidfVectorizer vectorizer = new SourceCodeTfidfVectorizer(repo.getSourceCodeMaps());
+		vectorizer.train();
+		vectorizer.calculateTokensWeight(repo.getSourceCodeMaps());
 		BufferedWriter writer = new BufferedWriter(new FileWriter(output));
 		int count = 0;
 		for (Entry<String, SourceCode> entry : repo.getSourceCodeMaps().entrySet()) {
@@ -30,6 +35,12 @@ public class SourceCodeReositoryTest {
 			builder.append("FullClassName: " + sourceCode.getFullClassName() + "\n");
 			builder.append("Content: " + sourceCode.getSourceCodeCorpus().getContent() + "\n");
 			builder.append("LengthScore: " + sourceCode.getLengthScore() + "\n");
+			builder.append("ContentNorm: " + sourceCode.getSourceCodeCorpus().getContentNorm() + "\n");
+			builder.append("ContentTokens: ");
+			for (TokenScore tokenScore : sourceCode.getSourceCodeCorpus().getContentTokens().values()) {
+				builder.append(String.format("%s(%f,%f,%f) ", tokenScore.getToken(), tokenScore.getTf(),
+						tokenScore.getIdf(), tokenScore.getTokenWeight()));
+			}
 			builder.append("Methods: " + "\n");
 			for (Method method : sourceCode.getMethodList()) {
 				builder.append("\tMethodName: " + method.getName() + "\tParams: " + 

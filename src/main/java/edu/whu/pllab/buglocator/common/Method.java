@@ -2,6 +2,7 @@ package edu.whu.pllab.buglocator.common;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.HashMap;
 
 public class Method {
 
@@ -10,6 +11,9 @@ public class Method {
     private String params;
     private String content;
 	private String hashKey;
+	
+	private HashMap<String, TokenScore> contentTokens;
+	private double contentNorm;
 
     public Method() {
     	this.setName("");
@@ -17,6 +21,8 @@ public class Method {
     	this.setParams("");
     	this.setContent("");
     	this.setHashKey("");
+    	this.contentTokens = new HashMap<String, TokenScore>();
+    	this.contentNorm = 0.0;
     }
     
 	public Method(String name, String returnType, String params) {
@@ -25,6 +31,8 @@ public class Method {
     	this.params = params;
     	this.setContent("");
     	this.setHashKey(calculateMD5(name + " " + returnType + " " + params));
+    	this.contentTokens = new HashMap<String, TokenScore>();
+    	this.contentNorm = 0.0;
     }
 	
 	public Method(String sourceCodeName, String name, String returnType, String params) {
@@ -33,6 +41,8 @@ public class Method {
 		this.params = params;
     	this.setContent("");
 		this.setHashKey(calculateMD5(name + " " + returnType + " " + params));
+		this.contentTokens = new HashMap<String, TokenScore>();
+    	this.contentNorm = 0.0;
 	}
 	
     private String calculateMD5(String str){
@@ -94,4 +104,21 @@ public class Method {
 	public void setHashKey(String hashKey) {
 		this.hashKey = hashKey;
 	}
+	
+	public double getContentNorm() {
+		return contentNorm;
+	}
+	
+	public void setContentNorm(double contentNorm) {
+		this.contentNorm = contentNorm;
+	}
+	
+	public HashMap<String, TokenScore> getContentTokens() {
+		return contentTokens;
+	}
+	
+	public void setContentTokens(HashMap<String, TokenScore> contentTokens) {
+		this.contentTokens = contentTokens;
+	}
+	
 }

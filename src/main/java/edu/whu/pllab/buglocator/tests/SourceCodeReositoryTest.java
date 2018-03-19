@@ -35,7 +35,11 @@ public class SourceCodeReositoryTest {
 			builder.append("FullClassName: " + sourceCode.getFullClassName() + "\n");
 			builder.append("Content: " + sourceCode.getSourceCodeCorpus().getContent() + "\n");
 			builder.append("LengthScore: " + sourceCode.getLengthScore() + "\n");
-			builder.append("ContentNorm: " + sourceCode.getSourceCodeCorpus().getContentNorm() + "\n");
+			builder.append("ChangeHistory: ");
+			for (Long point : sourceCode.getChangeHistory()) {
+				builder.append(point + " ");
+			}
+			builder.append("\nContentNorm: " + sourceCode.getSourceCodeCorpus().getContentNorm() + "\n");
 			builder.append("ContentTokens: ");
 			for (TokenScore tokenScore : sourceCode.getSourceCodeCorpus().getContentTokens().values()) {
 				builder.append(String.format("%s(%f,%f,%f) ", tokenScore.getToken(), tokenScore.getTf(),

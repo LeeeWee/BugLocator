@@ -40,6 +40,7 @@ public class BugReport {
 		this.commitID = commitID;
 		this.commitTime = commitTime;
 		this.fixedFiles = fixedFiles;
+		this.bugReportCorpus = new BugReportCorpus();
 	}
 
 	/**

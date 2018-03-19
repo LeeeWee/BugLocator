@@ -1,12 +1,18 @@
 package edu.whu.pllab.buglocator.common;
 
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.io.OutputStreamWriter;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -38,6 +44,7 @@ public class BugReportRepository {
 		String brExcelPath = property.getBugFilePath();
 		bugReports = parseExcel(new File(brExcelPath));
 		cleanText();
+		saveSourceCodeChangeHistory(extractSourceCodeChangeHistory(),property.getCodeChangeHistoryPath());
 	}
 	
 	/** get BugReportsMap */
@@ -114,8 +121,19 @@ public class BugReportRepository {
 		}
 	}
 	
+	/** split filesString and get fixed files */
+	private TreeSet<String> extractFilesFromString(String filesString) {
+		TreeSet<String> filesList = new TreeSet<String>();
+		String[] files = filesString.split("\\.java ");
+		for (int i = 0; i < files.length; i++) {
+				filesList.add(files[i].trim() + ".java");
+		}
+		return filesList;
+	}
+	
 	/** set bug report corpus for all bug reports */
 	public void cleanText() {
+		logger.info("Preprocessing bug reports' summary and description...");
 		ExecutorService executor = Executors.newFixedThreadPool(Property.THREAD_COUNT);
 		for (Entry<Integer, BugReport> entry : bugReports.entrySet()) {
 			Runnable worker = new WorkerThread(entry.getValue());
@@ -157,15 +175,48 @@ public class BugReportRepository {
 		}
 		return contentBuf.toString();
 	}
-	
-	/** split string and get files */
-	private TreeSet<String> extractFilesFromString(String filesString) {
-		TreeSet<String> filesList = new TreeSet<String>();
-		String[] files = filesString.split("\\.java ");
-		for (int i = 0; i < files.length; i++) {
-				filesList.add(files[i].trim() + ".java");
+
+	/** extract sourceCode change history points */
+	public HashMap<String, List<Date>> extractSourceCodeChangeHistory() {
+		logger.info("Extracting source code chang history...");
+		HashMap<String, List<Date>> changeHistory = new HashMap<String, List<Date>>();
+		for (BugReport br : bugReports.values()) {
+			TreeSet<String> changedFiles = br.getFixedFiles();
+			for (String file : changedFiles) {
+				if (!changeHistory.containsKey(file)) {
+					List<Date> dateList = new ArrayList<Date>();
+					changeHistory.put(file, dateList);
+				}
+				List<Date> dateList = changeHistory.get(file);
+				dateList.add(br.getCommitTime());
+			}
 		}
-		return filesList;
+		// sort date of changeHistory
+		for (List<Date> dateList : changeHistory.values()) {
+			dateList.sort(new Comparator<Date>() {
+				public int compare(Date date1, Date date2) {
+					return date1.compareTo(date2);
+				}
+			});
+		}
+		return changeHistory;
+	}
+	
+	/** save source code change history to local path */
+	public void saveSourceCodeChangeHistory(HashMap<String, List<Date>> codeChangeHistory, String output) {
+		try {
+			BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(output)));
+			for (Entry<String, List<Date>> entry : codeChangeHistory.entrySet()) {
+				writer.write(entry.getKey());
+				for (Date date : entry.getValue()) {
+					writer.write(", " + date.getTime());
+				}
+				writer.newLine();
+			}
+			writer.close();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 		
 }

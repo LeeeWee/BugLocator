@@ -1,6 +1,9 @@
 package edu.whu.pllab.buglocator.common;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStreamReader;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
@@ -25,7 +28,7 @@ public class SourceCodeRepository {
 	/** source code repository commit version */
 	private String version;
 	
-	private HashMap<String, SourceCode> SourceCodeMap;
+	private HashMap<String, SourceCode> sourceCodeMap;
 	
 	/** use file's absolutePath substring(sourceCodeDirNameLength+1) as file path*/
 	private int sourceCodeDirNameLength;
@@ -36,8 +39,9 @@ public class SourceCodeRepository {
 		String sourceCodeDir = property.getSourceCodeDir();
 		// initialize sourceCodeDirNameLength and sourceCodeMaps before loadSourceCodeFiles
 		sourceCodeDirNameLength = new File(sourceCodeDir).getAbsolutePath().length();
-		SourceCodeMap = new HashMap<String, SourceCode>();
+		sourceCodeMap = new HashMap<String, SourceCode>();
 		loadSourceCodeFiles(sourceCodeDir);
+		loadSourceCodeChangeHistory(property.getCodeChangeHistoryPath());
 		computeLengthScore();
 	}
 	
@@ -61,8 +65,9 @@ public class SourceCodeRepository {
 		}
 		// initialize sourceCodeDirNameLength and sourceCodeMaps before loadSourceCodeFiles
 		sourceCodeDirNameLength = new File(sourceCodeDir).getAbsolutePath().length();
-		SourceCodeMap = new HashMap<String, SourceCode>();
+		sourceCodeMap = new HashMap<String, SourceCode>();
 		loadSourceCodeFiles(sourceCodeDir);
+		loadSourceCodeChangeHistory(property.getCodeChangeHistoryPath());
 		computeLengthScore();
 	}
 	
@@ -118,9 +123,33 @@ public class SourceCodeRepository {
 			SourceCodeCorpus sourceCodeCorpus = new SourceCodeCorpus(parser.getContent());
 			sourceCode.setSourceCodeCorpus(sourceCodeCorpus);
 			// put to map
-			synchronized(SourceCodeMap) {
-				SourceCodeMap.put(sourceCode.getPath(), sourceCode);
+			synchronized(sourceCodeMap) {
+				sourceCodeMap.put(sourceCode.getPath(), sourceCode);
 			}
+		}
+	}
+	
+	/** load source code change history from history file */
+	public void loadSourceCodeChangeHistory(String historyFilePath) {
+		logger.info("Load source code files' change history..."); 
+		try {
+			BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(historyFilePath), "UTF-8"));
+			String line;
+			while ((line = reader.readLine()) != null) {
+				int firstComma = line.indexOf(",");
+				String path = line.substring(0, firstComma);
+				String[] times = line.substring(firstComma + 1).split(",");
+				long[] values = new long[times.length];
+				for (int i = 0; i < times.length; i++) {
+					values[i] = Long.parseLong(times[i].trim());
+					SourceCode sourceCode = sourceCodeMap.get(path);
+					if (sourceCode != null) 
+						sourceCode.setChangeHistory(values);
+				}
+			}
+			reader.close();
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
 	}
 	
@@ -130,7 +159,7 @@ public class SourceCodeRepository {
 		HashMap<String, Integer> corpusLensTable = new HashMap<String, Integer>();
 		int max = Integer.MIN_VALUE;
 		int count = 0, sum = 0;
-		for (Entry<String, SourceCode> entry : SourceCodeMap.entrySet()) {
+		for (Entry<String, SourceCode> entry : sourceCodeMap.entrySet()) {
 			String content = entry.getValue().getSourceCodeCorpus().getContent();
 			int lens = content.split(" ").length;
 			corpusLensTable.put(entry.getKey(), lens);
@@ -176,7 +205,7 @@ public class SourceCodeRepository {
 			if (score < 0.5D) {
 				score = 0.5D;
 			}
-			SourceCodeMap.get(filePath).setLengthScore(score);
+			sourceCodeMap.get(filePath).setLengthScore(score);
 		}
 	}
 	
@@ -200,11 +229,11 @@ public class SourceCodeRepository {
 	}
 
 	public HashMap<String, SourceCode> getSourceCodeMaps() {
-		return SourceCodeMap;
+		return sourceCodeMap;
 	}
 
 	public void setSourceCodeMaps(HashMap<String, SourceCode> sourceCodeMaps) {
-		this.SourceCodeMap = sourceCodeMaps;
+		this.sourceCodeMap = sourceCodeMaps;
 	}
 
 	

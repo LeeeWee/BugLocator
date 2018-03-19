@@ -15,6 +15,7 @@ public class Property {
 	public final static String CODE_CORPUS_PATH = "sourceCode.s";
 	public final static String CODE_TFIDF_PATH = "sourceCode.tfidf";
 	public final static String CODE_PARAGRAPH_VECTOR_PATH = "sourceCode.v";
+	public final static String CODE_CHANGE_HISTORY_PATH = "sourceCode.history";
 	
 	
 	public final static int THREAD_COUNT = Runtime.getRuntime().availableProcessors();
@@ -35,6 +36,7 @@ public class Property {
 	private String codeTfidfModelPath;
 	private String brParagraphVectorPath;
 	private String codeParagraphVectorPath;
+	private String codeChangeHistoryPath;
 
 	/**
 	 * Constructor
@@ -89,11 +91,12 @@ public class Property {
 		String codeTfidfModelPath = new File(workingDir, CODE_TFIDF_PATH).getAbsolutePath();
 		String brParagraphVectorPath = new File(workingDir, BR_PARAGRAPH_VECTOR_PATH).getAbsolutePath();
 		String codeParagraphVectorPath = new File(workingDir, CODE_PARAGRAPH_VECTOR_PATH).getAbsolutePath();
+		String codeChangeHistoryPath = new File(workingDir, CODE_CHANGE_HISTORY_PATH).getAbsolutePath();
 		// set properties values
-		p.setValues(product, bugFilePath, sourceCodeDir, wordVectorPath, workingDir, brIndexPath, 
-				codeIndexPath, brCorpusPath, codeCorpusPath, brTfidfModelPath, 
-				codeTfidfModelPath, brParagraphVectorPath, codeParagraphVectorPath);
-		
+		p.setValues(product, bugFilePath, sourceCodeDir, wordVectorPath, workingDir, brIndexPath, codeIndexPath,
+				brCorpusPath, codeCorpusPath, brTfidfModelPath, codeTfidfModelPath, brParagraphVectorPath,
+				codeParagraphVectorPath, codeChangeHistoryPath);
+
 		return p;
 	}
 	
@@ -105,7 +108,7 @@ public class Property {
 	public void setValues(String product, String bugFilePath, String sourceCodeDir, String wordVectorPath,
 			String workingDir, String brIndexPath, String codeIndexPath, String brCorpusPath, String codeCorpusPath,
 			String brTfidfModelPath, String codeTfidfModelPath, String brParagraphVectorPath,
-			String codeParagraphVectorPath) {
+			String codeParagraphVectorPath, String codeChangeHistoryPath) {
 		setProduct(product);
 		setBugFilePath(bugFilePath);
 		setSourceCodeDir(sourceCodeDir);
@@ -119,6 +122,7 @@ public class Property {
 		setCodeTfidfModelPath(codeTfidfModelPath);
 		setBrParagraphVectorPath(brParagraphVectorPath);
 		setCodeParagraphVectorPath(codeParagraphVectorPath);
+		setCodeChangeHistoryPath(codeChangeHistoryPath);
 	}
 
 	/**
@@ -248,6 +252,13 @@ public class Property {
 
 	public void setCodeParagraphVectorPath(String codeParagraphVectorPath) {
 		this.codeParagraphVectorPath = codeParagraphVectorPath;
+	}
+	public String getCodeChangeHistoryPath() {
+		return codeChangeHistoryPath;
+	}
+
+	public void setCodeChangeHistoryPath(String codeChangeHistoryPath) {
+		this.codeChangeHistoryPath = codeChangeHistoryPath;
 	}
 
 }

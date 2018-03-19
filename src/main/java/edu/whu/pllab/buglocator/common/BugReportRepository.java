@@ -125,7 +125,7 @@ public class BugReportRepository {
 	private TreeSet<String> extractFilesFromString(String filesString) {
 		TreeSet<String> filesList = new TreeSet<String>();
 		String[] files = filesString.split("\\.java ");
-		for (int i = 0; i < files.length; i++) {
+		for (int i = 0; i < files.length - 1; i++) {
 				filesList.add(files[i].trim() + ".java");
 		}
 		return filesList;

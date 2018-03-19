@@ -14,8 +14,8 @@ import edu.whu.pllab.buglocator.vectorizer.SourceCodeTfidfVectorizer;
 public class SourceCodeReositoryTest {
 
 	public static void main(String[] args) throws Exception {
-		String output = "D:\\data\\sourceCodeRepositoryTest.txt";
-//		String output = "/Users/liwei/Documents/defect-prediction/working/SourceCodeTest.txt";
+//		String output = "D:\\data\\sourceCodeRepositoryTest.txt";
+		String output = "/Users/liwei/Documents/defect-prediction/working/SourceCodeTest.txt";
 		
 		@SuppressWarnings("unused")
 		Property property = Property.loadInstance();
@@ -46,7 +46,7 @@ public class SourceCodeReositoryTest {
 				builder.append(String.format("%s(%f,%f,%f) ", tokenScore.getToken(), tokenScore.getTf(),
 						tokenScore.getIdf(), tokenScore.getTokenWeight()));
 			}
-			builder.append("Methods: " + "\n");
+			builder.append("\nMethods: " + "\n");
 			for (Method method : sourceCode.getMethodList()) {
 				builder.append("\tMethodName: " + method.getName() + "\tParams: " + 
 						method.getParams() + "\tReturnType: " + method.getReturnType() + "\n");
@@ -55,7 +55,6 @@ public class SourceCodeReositoryTest {
 			writer.write(builder.toString());
 			writer.write("\n");
 		}
-		System.out.println("Count: " + count);
 		writer.close();
 	}
 	

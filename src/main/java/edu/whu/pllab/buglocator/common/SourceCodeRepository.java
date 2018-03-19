@@ -125,7 +125,7 @@ public class SourceCodeRepository {
 		
 		public void run() {
 			FileParser parser = new FileParser(new File(filePath));
-			String path = filePath.substring(sourceCodeDirNameLength + 1);
+			String path = filePath.substring(sourceCodeDirNameLength + 1).replaceAll("\\\\", "/");
 			// create sourceCode
 			SourceCode sourceCode = new SourceCode(path);
 			// set fullClassName
@@ -317,38 +317,42 @@ public class SourceCodeRepository {
 			if (sourceCodeNodeList != null) {
 				for (int i = 0; i < sourceCodeNodeList.getLength(); i++) {
 					Node codeNode = sourceCodeNodeList.item(i);
-					SourceCode sourceCode = new SourceCode();
-					for (Node childNode = codeNode.getFirstChild(); childNode != null; childNode = childNode
-							.getNextSibling()) {
-						if (childNode.getNodeName().equals("Path"))
-							sourceCode.setPath(childNode.getTextContent());
-						if (childNode.getNodeName().equals("FullClassName"))
-							sourceCode.setFullClassName(childNode.getTextContent());
-						if (childNode.getNodeName().equals("Content"))
-							sourceCode.setSourceCodeCorpus(new SourceCodeCorpus(childNode.getTextContent()));
+					if (codeNode.getNodeName().equals("SourceCode")) {
+						SourceCode sourceCode = new SourceCode();
 						List<Method> methodList = new ArrayList<Method>();
-						if (childNode.getNodeName().equals("Methods")) {
-							NodeList methodNodeList = childNode.getChildNodes();
-							for (int j = 0; j < methodNodeList.getLength(); j++) {
-								Node methodNode = methodNodeList.item(j);
-								String methodName = "", returnType = "", params = "", methodContent = "";
-								for (Node methodChildNode = methodNode.getFirstChild(); methodChildNode != null;
-										methodChildNode = methodChildNode.getNextSibling()) {
-									if (methodChildNode.getNodeName().equals("Name"))
-										methodName = methodChildNode.getTextContent();
-									if (methodChildNode.getNodeName().equals("ReturnType"))
-										returnType = methodChildNode.getTextContent();
-									if (methodChildNode.getNodeName().equals("Parameters"))
-										params = methodChildNode.getTextContent();
-									if (methodChildNode.getNodeName().equals("MethodContent"))
-										methodContent = methodChildNode.getTextContent();
+						for (Node childNode = codeNode.getFirstChild(); childNode != null; childNode = childNode
+								.getNextSibling()) {
+							if (childNode.getNodeName().equals("Path"))
+								sourceCode.setPath(childNode.getTextContent());
+							else if (childNode.getNodeName().equals("FullClassName"))
+								sourceCode.setFullClassName(childNode.getTextContent());
+							else if (childNode.getNodeName().equals("Content"))
+								sourceCode.setSourceCodeCorpus(new SourceCodeCorpus(childNode.getTextContent()));
+							else if (childNode.getNodeName().equals("Methods")) {
+								NodeList methodNodeList = childNode.getChildNodes();
+								for (int j = 0; j < methodNodeList.getLength(); j++) {
+									Node methodNode = methodNodeList.item(j);
+									if (methodNode.getNodeName().equals("Method")) {
+										String methodName = "", returnType = "", params = "", methodContent = "";
+										for (Node methodChildNode = methodNode.getFirstChild(); methodChildNode != null;
+												methodChildNode = methodChildNode.getNextSibling()) {
+											if (methodChildNode.getNodeName().equals("Name"))
+												methodName = methodChildNode.getTextContent();
+											else if (methodChildNode.getNodeName().equals("ReturnType"))
+												returnType = methodChildNode.getTextContent();
+											else if (methodChildNode.getNodeName().equals("Parameters"))
+												params = methodChildNode.getTextContent();
+											else if (methodChildNode.getNodeName().equals("MethodContent"))
+												methodContent = methodChildNode.getTextContent();
+										}
+										Method method = new Method(methodName, returnType, params);
+										method.setContent(methodContent);
+										methodList.add(method);
+									}
 								}
-								Method method = new Method(methodName, returnType, params);
-								method.setContent(methodContent);
-								methodList.add(method);
 							}
+							sourceCode.setMethodList(methodList);
 						}
-						sourceCode.setMethodList(methodList);
 						sourceCodeMap.put(sourceCode.getPath(), sourceCode);
 					}
 				}

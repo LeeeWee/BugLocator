@@ -6,6 +6,7 @@ import java.util.Map.Entry;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 import edu.whu.pllab.buglocator.common.BugReport;
+import edu.whu.pllab.buglocator.common.Method;
 import edu.whu.pllab.buglocator.common.SourceCode;
 import edu.whu.pllab.buglocator.common.TokenScore;
 
@@ -22,12 +23,16 @@ public class Similarity {
 		switch (similarityType) {
 			case VSM:
 				sim = vsmSimilarity(br, code);
+				break;
 			case SYMMETRIC:
 				sim = symmetricSimilarity(br, code);
+				break;
 			case ASYMMETRIC:
 				sim = asymmetricSimilarity(br, code);
+				break;
 			case PARAGRAPH_VECTOR:
 				sim = paragraphVectorSimilarity(br, code);
+				break;
 			default:
 				sim = vsmSimilarity(br, code); 
 		}
@@ -40,14 +45,40 @@ public class Similarity {
 		switch (similarityType) {
 			case VSM:
 				sim = vsmSimilarity(br1, br2);
+				break;
 			case SYMMETRIC:
 				sim = symmetricSimilarity(br1, br2);
+				break;
 			case ASYMMETRIC:
 				sim = asymmetricSimilarity(br1, br2);
+				break;
 			case PARAGRAPH_VECTOR:
 				sim = paragraphVectorSimilarity(br1, br2);
+				break;
 			default:
 				sim = vsmSimilarity(br1, br2); 
+		}
+		return sim;
+	}
+	
+	/** similarity between BugReport and SourceCode by specific similarity type */
+	public static double similarity(BugReport br, Method method, int similarityType) {
+		double sim = 0;
+		switch (similarityType) {
+			case VSM:
+				sim = vsmSimilarity(br, method);
+				break;
+			case SYMMETRIC:
+				sim = symmetricSimilarity(br, method);
+				break;
+			case ASYMMETRIC:
+				sim = asymmetricSimilarity(br, method);
+				break;
+			case PARAGRAPH_VECTOR:
+				sim = paragraphVectorSimilarity(br, method);
+				break;
+			default:
+				sim = vsmSimilarity(br, method); 
 		}
 		return sim;
 	}
@@ -60,6 +91,11 @@ public class Similarity {
 	/** Vector Space Model similarity between input BugReports */
 	public static double vsmSimilarity(BugReport br1, BugReport br2) {
 		return vsmSimilarity(br1.getBugReportCorpus().getContentTokens(), br2.getBugReportCorpus().getContentTokens());
+	}
+	
+	/** Vector Space Model similarity between input BugReport and Method */
+	public static double vsmSimilarity(BugReport br, Method method) {
+		return vsmSimilarity(br.getBugReportCorpus().getContentTokens(), method.getContentTokens());
 	}
 	
 	/** Vector Space Model similarity between input tokenScoreMaps */
@@ -86,6 +122,12 @@ public class Similarity {
 				br2.getBugReportCorpus().getContentTokens());
 	}
 	
+	/** symmetric similarity between input BugReport and method, sim(T, S) = (sim(T->S) + sim(S->T)) / 2 */
+	public static double symmetricSimilarity(BugReport br, Method method) {
+		return symmetricSimilarity(br.getBugReportCorpus().getContentTokens(),
+				method.getContentTokens());
+	}
+	
 	/** symmetric similarity between input tokenScoreMaps, sim(T, S) = (sim(T->S) + sim(S->T)) / 2 */
 	public static double symmetricSimilarity(HashMap<String, TokenScore> tokenScoreMap1,
 			HashMap<String, TokenScore> tokenScoreMap2) {
@@ -103,6 +145,12 @@ public class Similarity {
 	public static double asymmetricSimilarity(BugReport br1, BugReport br2) {
 		return asymmetricSimilarity(br1.getBugReportCorpus().getContentTokens(),
 				br2.getBugReportCorpus().getContentTokens());
+	}
+	
+	/** symmetric similarity between input BugReport and method, sim(T, S) = sim(T->S) */
+	public static double asymmetricSimilarity(BugReport br, Method method) {
+		return asymmetricSimilarity(br.getBugReportCorpus().getContentTokens(),
+				method.getContentTokens());
 	}
 	
 	/** symmetric similarity between input tokenScoreMaps, sim(T, S) = sim(T->S) */
@@ -130,6 +178,11 @@ public class Similarity {
 	/** paragraph vector between input BugReports */
 	public static double paragraphVectorSimilarity(BugReport br1, BugReport br2) {
 		return Transforms.cosineSim(br1.getParagraphVector(), br2.getParagraphVector());
+	}
+	
+	/** paragraph vector between input BugReport and Method */
+	public static double paragraphVectorSimilarity(BugReport br, Method method) {
+		return Transforms.cosineSim(br.getParagraphVector(), method.getParagraphVector());
 	}
 	
 }

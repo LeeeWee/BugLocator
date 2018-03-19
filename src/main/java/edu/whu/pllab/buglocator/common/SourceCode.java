@@ -53,7 +53,7 @@ public class SourceCode {
 	 * @return The index of the latest time of given time.
 	 */
 	public int locateChangePoint(long time) {
-		if (changeHistory == null || changeHistory[0] > time) 
+		if (changeHistory.length == 0 || changeHistory[0] > time) 
 			return -1;
 		int i = 0;
 		for (int index = 0; index < changeHistory.length; index++) {

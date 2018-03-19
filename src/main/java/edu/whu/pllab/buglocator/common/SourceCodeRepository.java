@@ -3,12 +3,22 @@ package edu.whu.pllab.buglocator.common;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.ResetCommand.ResetType;
@@ -16,6 +26,10 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 import edu.whu.pllab.buglocator.Property;
 import edu.whu.pllab.buglocator.astparser.FileParser;
@@ -40,7 +54,15 @@ public class SourceCodeRepository {
 		// initialize sourceCodeDirNameLength and sourceCodeMaps before loadSourceCodeFiles
 		sourceCodeDirNameLength = new File(sourceCodeDir).getAbsolutePath().length();
 		sourceCodeMap = new HashMap<String, SourceCode>();
-		loadSourceCodeFiles(sourceCodeDir);
+		// if code repository xml file exists, load code repository from xml file,
+		// otherwise, load by parsing source code from source code dir
+		File codeRepoXMLFile = new File(property.getCodeRepositoryXMLPath());
+		if (codeRepoXMLFile.exists())
+			sourceCodeMap = parseXMLOfSourceCodeRepo(property.getCodeRepositoryXMLPath());
+		else {
+			loadSourceCodeFiles(sourceCodeDir);
+			saveSourceCodeRepoToXML(property.getCodeRepositoryXMLPath(), property.getProduct());
+		}
 		loadSourceCodeChangeHistory(property.getCodeChangeHistoryPath());
 		computeLengthScore();
 	}
@@ -213,13 +235,136 @@ public class SourceCodeRepository {
 	private double getNormalizedValue(int x, double max, double min) {
 		return (6F * (x - min)) / (max - min);
 	}
+	
+	/** save source code repository as xml to output path  */
+	public void saveSourceCodeRepoToXML(String output, String product) {
+		logger.info("Saving source code repository as xml to " + output + "...");
+		DocumentBuilderFactory domFactory = DocumentBuilderFactory.newInstance();
+		try {
+			DocumentBuilder domBuilder = domFactory.newDocumentBuilder();
+			Document doc = domBuilder.newDocument();
+			
+			Element root = doc.createElement("SourceCodeRepository");
+			root.setAttribute("product", product);
+			doc.appendChild(root);
+			
+			// iterate source code
+			for (SourceCode code : sourceCodeMap.values()) {
+				Element codeElement = doc.createElement("SourceCode");
+				
+				Element pathElement = doc.createElement("Path");
+				pathElement.appendChild(doc.createTextNode(code.getPath()));
+				codeElement.appendChild(pathElement);
+				
+				Element classNameElement = doc.createElement("FullClassName");
+				classNameElement.appendChild(doc.createTextNode(code.getFullClassName()));
+				codeElement.appendChild(classNameElement);
+				
+				Element contentElement = doc.createElement("Content");
+				contentElement.appendChild(doc.createTextNode(code.getSourceCodeCorpus().getContent()));
+				codeElement.appendChild(contentElement);
+				
+				Element methodsElement = doc.createElement("Methods");
+				codeElement.appendChild(methodsElement);
+				for (Method method : code.getMethodList()) {
+					Element methodElement = doc.createElement("Method");
+					
+					Element nameElement = doc.createElement("Name");
+					nameElement.appendChild(doc.createTextNode(method.getName()));
+					methodElement.appendChild(nameElement);
+					
+					Element returnTypeElement = doc.createElement("ReturnType");
+					returnTypeElement.appendChild(doc.createTextNode(method.getReturnType()));
+					methodElement.appendChild(returnTypeElement);
+					
+					Element paramsElement = doc.createElement("Parameters");
+					paramsElement.appendChild(doc.createTextNode(method.getParams()));
+					methodElement.appendChild(paramsElement);
+					
+					Element methodContentElement = doc.createElement("MethodContent");
+					methodContentElement.appendChild(doc.createTextNode(method.getContent()));
+					methodElement.appendChild(methodContentElement);
+					
+					// add method element to code element
+					methodsElement.appendChild(methodElement);
+				}
+				root.appendChild(codeElement);
+			}
+			doc.setXmlStandalone(true);
+			TransformerFactory transformerFactory = TransformerFactory.newInstance();
+			Transformer transformer = transformerFactory.newTransformer();
+			transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+			transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
+			DOMSource source = new DOMSource(doc);
+			StreamResult result = new StreamResult(new File(output));
+			transformer.transform(source, result);
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+	}
+	
+	/** read sourceCode repository by parsing xml */
+	public HashMap<String, SourceCode> parseXMLOfSourceCodeRepo(String xmlPath) {
+		logger.info("Loading source code repository by parsing xml...");
+		HashMap<String, SourceCode> sourceCodeMap = new HashMap<String, SourceCode>();
+		DocumentBuilderFactory domFactory = DocumentBuilderFactory.newInstance();
+		try {
+			DocumentBuilder domBuilder = domFactory.newDocumentBuilder();
+			InputStream is = new FileInputStream(xmlPath);
+			Document doc = domBuilder.parse(is);
+			Element root = doc.getDocumentElement();
+			NodeList sourceCodeNodeList = root.getChildNodes();
+			if (sourceCodeNodeList != null) {
+				for (int i = 0; i < sourceCodeNodeList.getLength(); i++) {
+					Node codeNode = sourceCodeNodeList.item(i);
+					SourceCode sourceCode = new SourceCode();
+					for (Node childNode = codeNode.getFirstChild(); childNode != null; childNode = childNode
+							.getNextSibling()) {
+						if (childNode.getNodeName().equals("Path"))
+							sourceCode.setPath(childNode.getTextContent());
+						if (childNode.getNodeName().equals("FullClassName"))
+							sourceCode.setFullClassName(childNode.getTextContent());
+						if (childNode.getNodeName().equals("Content"))
+							sourceCode.setSourceCodeCorpus(new SourceCodeCorpus(childNode.getTextContent()));
+						List<Method> methodList = new ArrayList<Method>();
+						if (childNode.getNodeName().equals("Methods")) {
+							NodeList methodNodeList = childNode.getChildNodes();
+							for (int j = 0; j < methodNodeList.getLength(); j++) {
+								Node methodNode = methodNodeList.item(j);
+								String methodName = "", returnType = "", params = "", methodContent = "";
+								for (Node methodChildNode = methodNode.getFirstChild(); methodChildNode != null;
+										methodChildNode = methodChildNode.getNextSibling()) {
+									if (methodChildNode.getNodeName().equals("Name"))
+										methodName = methodChildNode.getTextContent();
+									if (methodChildNode.getNodeName().equals("ReturnType"))
+										returnType = methodChildNode.getTextContent();
+									if (methodChildNode.getNodeName().equals("Parameters"))
+										params = methodChildNode.getTextContent();
+									if (methodChildNode.getNodeName().equals("MethodContent"))
+										methodContent = methodChildNode.getTextContent();
+								}
+								Method method = new Method(methodName, returnType, params);
+								method.setContent(methodContent);
+								methodList.add(method);
+							}
+						}
+						sourceCode.setMethodList(methodList);
+						sourceCodeMap.put(sourceCode.getPath(), sourceCode);
+					}
+				}
+			}
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+		logger.info("Finished parsing, total " + sourceCodeMap.size() + " java files.");
+		return sourceCodeMap;
+	}
 
 	/** Get length score */
 	public double getLengthScore(double len) {
 		return Math.exp(len) / (1.0D + Math.exp(len));
 	}
 	
-
 	public String getVersion() {
 		return version;
 	}

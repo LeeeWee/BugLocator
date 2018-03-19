@@ -4,6 +4,8 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 
+import org.nd4j.linalg.api.ndarray.INDArray;
+
 public class Method {
 
     private String name;
@@ -14,6 +16,8 @@ public class Method {
 	
 	private HashMap<String, TokenScore> contentTokens;
 	private double contentNorm;
+	
+	private INDArray paragraphVector;
 
     public Method() {
     	this.setName("");
@@ -34,16 +38,6 @@ public class Method {
     	this.contentTokens = new HashMap<String, TokenScore>();
     	this.contentNorm = 0.0;
     }
-	
-	public Method(String sourceCodeName, String name, String returnType, String params) {
-		this.name = name;
-		this.returnType = returnType;
-		this.params = params;
-    	this.setContent("");
-		this.setHashKey(calculateMD5(name + " " + returnType + " " + params));
-		this.contentTokens = new HashMap<String, TokenScore>();
-    	this.contentNorm = 0.0;
-	}
 	
     private String calculateMD5(String str){
     	String MD5 = ""; 
@@ -119,6 +113,14 @@ public class Method {
 	
 	public void setContentTokens(HashMap<String, TokenScore> contentTokens) {
 		this.contentTokens = contentTokens;
+	}
+
+	public INDArray getParagraphVector() {
+		return paragraphVector;
+	}
+
+	public void setParagraphVector(INDArray paragraphVector) {
+		this.paragraphVector = paragraphVector;
 	}
 	
 }

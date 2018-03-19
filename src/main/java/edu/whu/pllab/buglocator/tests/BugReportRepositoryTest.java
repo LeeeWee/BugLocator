@@ -11,10 +11,10 @@ import edu.whu.pllab.buglocator.common.TokenScore;
 import edu.whu.pllab.buglocator.vectorizer.BugReportTfidfVectorizer;
 
 public class BugReportRepositoryTest {
-	@SuppressWarnings("unused")
 	public static void main(String[] args) throws Exception {
 		String output = "/Users/liwei/Documents/defect-prediction/working/BugReportTest.txt";
 		
+		@SuppressWarnings("unused")
 		Property property = Property.loadInstance();
 		BugReportRepository brRepo = new BugReportRepository();
 		BugReportTfidfVectorizer vectorizer = new BugReportTfidfVectorizer(brRepo.getBugReports());

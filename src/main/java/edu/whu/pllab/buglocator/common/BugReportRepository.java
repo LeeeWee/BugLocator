@@ -173,7 +173,7 @@ public class BugReportRepository {
 				}
 			}
 		}
-		return contentBuf.toString();
+		return contentBuf.toString().trim();
 	}
 
 	/** extract sourceCode change history points */

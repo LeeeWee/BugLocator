@@ -102,7 +102,7 @@ public class FileParser {
 				continue;
 			sourceCodeContentBuffer.append((new StringBuilder(String.valueOf(token))).append(" ").toString());
 		}
-		return sourceCodeContentBuffer.toString();
+		return sourceCodeContentBuffer.toString().trim();
 	}
 	
 	/**

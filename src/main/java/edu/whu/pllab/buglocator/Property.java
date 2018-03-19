@@ -7,16 +7,16 @@ import java.util.Properties;
 
 public class Property {
 	
-	public final static String BR_INDEX_PATH = "bugReport.i";
-	public final static String BR_CORPUS_PATH = "bugReport.s";
 	public final static String BR_TFIDF_PATH = "bugReport.tfidf";
-	public final static String BR_PARAGRAPH_VECTOR_PATH = "bugReport.v";
-	public final static String CODE_INDEX_PATH = "sourceCode.i";
-	public final static String CODE_CORPUS_PATH = "sourceCode.s";
 	public final static String CODE_TFIDF_PATH = "sourceCode.tfidf";
+	public final static String BR_PARAGRAPH_VECTOR_PATH = "bugReport.v";
 	public final static String CODE_PARAGRAPH_VECTOR_PATH = "sourceCode.v";
 	public final static String CODE_CHANGE_HISTORY_PATH = "sourceCode.history";
-	
+	public final static String TRAINING_FEATURES_PATH = "training.csv";
+	public final static String TEST_FEATURES_PATH = "test.csv";
+	public final static String TRAINING_MODEL_PATH = "train.model";
+	public final static String PREDICTION_PATH = "test.prediction";
+	public final static String CODE_REPO_XML_PATH = "codeRepository.xml";
 	
 	public final static int THREAD_COUNT = Runtime.getRuntime().availableProcessors();
 	public final static String STOPWORDS_PATH = Property.readProperty("STOPWORDS_PATH");
@@ -28,16 +28,17 @@ public class Property {
 	private String sourceCodeDir;
 	private String wordVectorPath;
 	private String workingDir;
-	private String brIndexPath;
-	private String codeIndexPath;
-	private String brCorpusPath;
-	private String codeCorpusPath;
 	private String brTfidfModelPath;
 	private String codeTfidfModelPath;
 	private String brParagraphVectorPath;
 	private String codeParagraphVectorPath;
 	private String codeChangeHistoryPath;
-
+	private String trainingFeaturesPath;
+	private String testFeaturesPath;
+	private String trainingModelPath;
+	private String predictionPath;
+	private String codeRepositoryXMLPath;
+	
 	/**
 	 * Constructor
 	 */
@@ -83,46 +84,46 @@ public class Property {
 		String sourceCodeDir = Property.readProperty(targetProduct + "_" + "SOURCE_DIR");
 		String wordVectorPath = Property.readProperty(targetProduct + "_" + "WORD_VECTOR_PATH");
 		String workingDir = Property.readProperty(targetProduct + "_" + "WORK_DIR");
-		String brIndexPath = new File(workingDir, BR_INDEX_PATH).getAbsolutePath();
-		String codeIndexPath = new File(workingDir, CODE_INDEX_PATH).getAbsolutePath();
-		String brCorpusPath = new File(workingDir, BR_CORPUS_PATH).getAbsolutePath();
-		String codeCorpusPath = new File(workingDir, CODE_CORPUS_PATH).getAbsolutePath();
 		String brTfidfModelPath = new File(workingDir, BR_TFIDF_PATH).getAbsolutePath();
 		String codeTfidfModelPath = new File(workingDir, CODE_TFIDF_PATH).getAbsolutePath();
 		String brParagraphVectorPath = new File(workingDir, BR_PARAGRAPH_VECTOR_PATH).getAbsolutePath();
 		String codeParagraphVectorPath = new File(workingDir, CODE_PARAGRAPH_VECTOR_PATH).getAbsolutePath();
 		String codeChangeHistoryPath = new File(workingDir, CODE_CHANGE_HISTORY_PATH).getAbsolutePath();
+		String trainingFeaturesPath = new File(workingDir, TRAINING_FEATURES_PATH).getAbsolutePath();
+		String testFeaturesPath = new File(workingDir, TEST_FEATURES_PATH).getAbsolutePath();
+		String trainingModelPath = new File(workingDir, TRAINING_MODEL_PATH).getAbsolutePath();
+		String predictionPath = new File(workingDir, PREDICTION_PATH).getAbsolutePath();
+		String codeRepositoryXMLPath = new File(workingDir, CODE_REPO_XML_PATH).getAbsolutePath();
 		// set properties values
-		p.setValues(product, bugFilePath, sourceCodeDir, wordVectorPath, workingDir, brIndexPath, codeIndexPath,
-				brCorpusPath, codeCorpusPath, brTfidfModelPath, codeTfidfModelPath, brParagraphVectorPath,
-				codeParagraphVectorPath, codeChangeHistoryPath);
-
+		p.setValues(product, bugFilePath, sourceCodeDir, wordVectorPath, workingDir, brTfidfModelPath,
+				codeTfidfModelPath, brParagraphVectorPath, codeParagraphVectorPath, codeChangeHistoryPath,
+				trainingFeaturesPath, testFeaturesPath, trainingModelPath, predictionPath, codeRepositoryXMLPath);
 		return p;
 	}
 	
-
 	
 	/**
 	 * set values for Property
 	 */
 	public void setValues(String product, String bugFilePath, String sourceCodeDir, String wordVectorPath,
-			String workingDir, String brIndexPath, String codeIndexPath, String brCorpusPath, String codeCorpusPath,
-			String brTfidfModelPath, String codeTfidfModelPath, String brParagraphVectorPath,
-			String codeParagraphVectorPath, String codeChangeHistoryPath) {
+			String workingDir, String brTfidfModelPath, String codeTfidfModelPath, String brParagraphVectorPath,
+			String codeParagraphVectorPath, String codeChangeHistoryPath, String trainingFeaturesPath,
+			String testFeaturesPath, String trainingModelPath, String predictionPath, String codeRepositoryXMLPath) {
 		setProduct(product);
 		setBugFilePath(bugFilePath);
 		setSourceCodeDir(sourceCodeDir);
 		setWordVectorPath(wordVectorPath);
 		setWorkingDir(workingDir);
-		setBrIndexPath(brIndexPath);
-		setCodeIndexPath(codeIndexPath);
-		setBrCorpusPath(brCorpusPath);
-		setCodeCorpusPath(codeCorpusPath);
 		setBrTfidfModelPath(brTfidfModelPath);
 		setCodeTfidfModelPath(codeTfidfModelPath);
 		setBrParagraphVectorPath(brParagraphVectorPath);
 		setCodeParagraphVectorPath(codeParagraphVectorPath);
 		setCodeChangeHistoryPath(codeChangeHistoryPath);
+		setTrainingFeaturesPath(trainingFeaturesPath);
+		setTestFeaturesPath(testFeaturesPath);
+		setTrainingModelPath(trainingModelPath);
+		setPredictionPath(predictionPath);
+		setCodeRepositoryXMLPath(codeRepositoryXMLPath);
 	}
 
 	/**
@@ -136,16 +137,22 @@ public class Property {
 	 * print values of properties
 	 */
 	public void printValues() {
+		System.out.printf("Properties:");
 		System.out.printf("THREAD_COUNT: %d\n", Property.THREAD_COUNT);
-		
+		System.out.printf("StopwordsPath: %d\n", Property.STOPWORDS_PATH);
+		System.out.printf("Product: %s\n", getProduct());
 		System.out.printf("BugFilePath: %s\n", getBugFilePath());
 		System.out.printf("SourceCodeDir: %s\n", getSourceCodeDir());
 		System.out.printf("WordVectorPath: %s\n", getWordVectorPath());
 		System.out.printf("WorkingDir: %s\n", getWorkingDir());
-		System.out.printf("brCorpusPath: %s\n", getBrCorpusPath());
-		System.out.printf("codeCorpusPath: %s\n", getCodeCorpusPath());
-		System.out.printf("brTfidfModelPath: %s\n", getBrTfidfModelPath());
-		System.out.printf("codeTfidfModelPath: %s\n", getCodeTfidfModelPath());
+		System.out.printf("BrTfidfModelPath: %s\n", getBrTfidfModelPath());
+		System.out.printf("CodeTfidfModelPath: %s\n", getCodeTfidfModelPath());
+		System.out.printf("BrParagraphVectorPath: %s\n", getBrParagraphVectorPath());
+		System.out.printf("CodeParagraphVectorPath: %s\n", getCodeParagraphVectorPath());
+		System.out.printf("TrainingFeaturesPath: %s\n", getTrainingFeaturesPath());
+		System.out.printf("testFeaturesPath: %s\n", getTestFeaturesPath());
+		System.out.printf("trainingModelPath: %s\n", getTrainingModelPath());
+		System.out.printf("predictionPath: %s\n", getPredictionPath());
 	}
 	
 	
@@ -190,38 +197,6 @@ public class Property {
 		this.workingDir = workingDir;
 	}
 
-	public String getBrIndexPath() {
-		return brIndexPath;
-	}
-
-	public void setBrIndexPath(String brIndexPath) {
-		this.brIndexPath = brIndexPath;
-	}
-
-	public String getCodeIndexPath() {
-		return codeIndexPath;
-	}
-
-	public void setCodeIndexPath(String codeIndexPath) {
-		this.codeIndexPath = codeIndexPath;
-	}
-	
-	public String getBrCorpusPath() {
-		return brCorpusPath;
-	}
-
-	public void setBrCorpusPath(String brCorpusPath) {
-		this.brCorpusPath = brCorpusPath;
-	}
-
-	public String getCodeCorpusPath() {
-		return codeCorpusPath;
-	}
-
-	public void setCodeCorpusPath(String codeCorpusPath) {
-		this.codeCorpusPath = codeCorpusPath;
-	}
-
 	public String getBrTfidfModelPath() {
 		return brTfidfModelPath;
 	}
@@ -261,4 +236,44 @@ public class Property {
 		this.codeChangeHistoryPath = codeChangeHistoryPath;
 	}
 
+	public String getTrainingFeaturesPath() {
+		return trainingFeaturesPath;
+	}
+
+	public void setTrainingFeaturesPath(String trainingFeaturesPath) {
+		this.trainingFeaturesPath = trainingFeaturesPath;
+	}
+
+	public String getTestFeaturesPath() {
+		return testFeaturesPath;
+	}
+
+	public void setTestFeaturesPath(String testFeaturesPath) {
+		this.testFeaturesPath = testFeaturesPath;
+	}
+
+	public String getTrainingModelPath() {
+		return trainingModelPath;
+	}
+
+	public void setTrainingModelPath(String trainingModelPath) {
+		this.trainingModelPath = trainingModelPath;
+	}
+
+	public String getPredictionPath() {
+		return predictionPath;
+	}
+
+	public void setPredictionPath(String predictionPath) {
+		this.predictionPath = predictionPath;
+	}
+
+	public String getCodeRepositoryXMLPath() {
+		return codeRepositoryXMLPath;
+	}
+
+	public void setCodeRepositoryXMLPath(String codeRepositoryXMLPath) {
+		this.codeRepositoryXMLPath = codeRepositoryXMLPath;
+	}
+	
 }

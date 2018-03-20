@@ -33,10 +33,10 @@ public class IntegratedScore {
 		public int compare(IntegratedScore r1, IntegratedScore r2) {
 			if (r1.getScore() > r2.getScore()) 
 				return -1;
-			else if (r1.getScore() == r2.getScore()) 
-				return 0;
-			else 
+			else if (r1.getScore() < r2.getScore()) 
 				return 1;
+			else 
+				return 0;
 		}
 	}
 	

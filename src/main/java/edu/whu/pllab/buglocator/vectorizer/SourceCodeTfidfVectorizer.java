@@ -97,6 +97,7 @@ public class SourceCodeTfidfVectorizer {
 			contentTokens.put(token, tokenScore);
 			contentNorm += tfidf * tfidf;
 		}
+		contentNorm = Math.sqrt(contentNorm);
 		sourceCodeCorpus.setContentNorm(contentNorm);
 	}
 	
@@ -126,6 +127,7 @@ public class SourceCodeTfidfVectorizer {
 			contentTokens.put(token, tokenScore);
 			contentNorm += tfidf * tfidf;
 		}
+		contentNorm = Math.sqrt(contentNorm);
 		method.setContentNorm(contentNorm);
 	}
 	

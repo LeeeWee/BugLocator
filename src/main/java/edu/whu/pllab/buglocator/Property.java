@@ -17,6 +17,7 @@ public class Property {
 	public final static String TRAINING_MODEL_PATH = "train.model";
 	public final static String PREDICTION_PATH = "test.prediction";
 	public final static String CODE_REPO_XML_PATH = "codeRepository.xml";
+	public final static String FEATURES_EXTREMUM_PATH = "features.params";
 	
 	public final static int THREAD_COUNT = Runtime.getRuntime().availableProcessors();
 	public final static String STOPWORDS_PATH = Property.readProperty("STOPWORDS_PATH");
@@ -38,6 +39,7 @@ public class Property {
 	private String trainingModelPath;
 	private String predictionPath;
 	private String codeRepositoryXMLPath;
+	private String featuresExtremumPath;
 	
 	/**
 	 * Constructor
@@ -94,10 +96,13 @@ public class Property {
 		String trainingModelPath = new File(workingDir, TRAINING_MODEL_PATH).getAbsolutePath();
 		String predictionPath = new File(workingDir, PREDICTION_PATH).getAbsolutePath();
 		String codeRepositoryXMLPath = new File(workingDir, CODE_REPO_XML_PATH).getAbsolutePath();
+		String featuresExtremumPath = new File(workingDir, FEATURES_EXTREMUM_PATH).getAbsolutePath();
+		
 		// set properties values
 		p.setValues(product, bugFilePath, sourceCodeDir, wordVectorPath, workingDir, brTfidfModelPath,
 				codeTfidfModelPath, brParagraphVectorPath, codeParagraphVectorPath, codeChangeHistoryPath,
-				trainingFeaturesPath, testFeaturesPath, trainingModelPath, predictionPath, codeRepositoryXMLPath);
+				trainingFeaturesPath, testFeaturesPath, trainingModelPath, predictionPath, codeRepositoryXMLPath,
+				featuresExtremumPath);
 		return p;
 	}
 	
@@ -108,7 +113,8 @@ public class Property {
 	public void setValues(String product, String bugFilePath, String sourceCodeDir, String wordVectorPath,
 			String workingDir, String brTfidfModelPath, String codeTfidfModelPath, String brParagraphVectorPath,
 			String codeParagraphVectorPath, String codeChangeHistoryPath, String trainingFeaturesPath,
-			String testFeaturesPath, String trainingModelPath, String predictionPath, String codeRepositoryXMLPath) {
+			String testFeaturesPath, String trainingModelPath, String predictionPath, String codeRepositoryXMLPath, 
+			String featuresExtremumPath) {
 		setProduct(product);
 		setBugFilePath(bugFilePath);
 		setSourceCodeDir(sourceCodeDir);
@@ -124,6 +130,7 @@ public class Property {
 		setTrainingModelPath(trainingModelPath);
 		setPredictionPath(predictionPath);
 		setCodeRepositoryXMLPath(codeRepositoryXMLPath);
+		setFeaturesExtremumPath(featuresExtremumPath);
 	}
 
 	/**
@@ -274,6 +281,14 @@ public class Property {
 
 	public void setCodeRepositoryXMLPath(String codeRepositoryXMLPath) {
 		this.codeRepositoryXMLPath = codeRepositoryXMLPath;
+	}
+
+	public String getFeaturesExtremumPath() {
+		return featuresExtremumPath;
+	}
+
+	public void setFeaturesExtremumPath(String featuresExtremumPath) {
+		this.featuresExtremumPath = featuresExtremumPath;
 	}
 	
 }

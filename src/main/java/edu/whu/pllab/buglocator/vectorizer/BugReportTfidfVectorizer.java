@@ -88,6 +88,7 @@ public class BugReportTfidfVectorizer {
 				contentTokens.put(token, tokenScore);
 				contentNorm += tfidf * tfidf;
 			}
+			contentNorm = Math.sqrt(contentNorm);
 			bugReportCorpus.setContentNorm(contentNorm);
 		}
 	}

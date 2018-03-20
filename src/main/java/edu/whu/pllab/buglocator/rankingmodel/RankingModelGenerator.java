@@ -27,6 +27,7 @@ import edu.whu.pllab.buglocator.common.Method;
 import edu.whu.pllab.buglocator.common.SimilarBugReport;
 import edu.whu.pllab.buglocator.common.SourceCode;
 import edu.whu.pllab.buglocator.similarity.Similarity;
+import edu.whu.pllab.buglocator.rankingmodel.IntegratedScore.IntegratedScoreComparator;
 
 public class RankingModelGenerator {
 	
@@ -232,7 +233,7 @@ public class RankingModelGenerator {
 			integratedScoreList.add(new IntegratedScore(code.getPath(), isModified, features));
 		}
 		// Sort and add to the final results.
-		integratedScoreList.sort(new IntegratedScore.IntegratedScoreComparator());
+		integratedScoreList.sort(new IntegratedScoreComparator());
 		Integer count = 0;
 		for (IntegratedScore score : integratedScoreList) {
 			result.add(score);
@@ -405,11 +406,11 @@ public class RankingModelGenerator {
 	 */
 	public void normalize(double[] features) {
 		features[0] = this.maxMinNormalize(maxSourceCodeSimilarity, minSourceCodeSimilarity, features[0]);
-		features[1] = this.maxMinNormalize(maxAPISimilarity, minAPISimilarity, features[0]);
+		features[1] = this.maxMinNormalize(maxAPISimilarity, minAPISimilarity, features[1]);
 		features[2] = this.maxMinNormalize(maxCollaborativeFilteringScore, minCollaborativeFilteringScore, features[2]);
 		features[3] = this.maxMinNormalize(maxClassNameSimilarity, minClassNameSimilarity, features[3]);
-		features[3] = this.maxMinNormalize(maxRecency, minRecency, features[3]);
-		features[3] = this.maxMinNormalize(maxFrequency, minFrequency, features[3]);
+		features[4] = this.maxMinNormalize(maxRecency, minRecency, features[4]);
+		features[5] = this.maxMinNormalize(maxFrequency, minFrequency, features[5]);
 	}
 	
 	/**

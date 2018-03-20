@@ -11,21 +11,28 @@ import edu.whu.pllab.buglocator.common.TokenScore;
 import edu.whu.pllab.buglocator.vectorizer.BugReportTfidfVectorizer;
 
 public class BugReportRepositoryTest {
+	
+	private static BugReportRepository brRepo;
+	
+	
 	public static void main(String[] args) throws Exception {
-		String output = "/Users/liwei/Documents/defect-prediction/working/BugReportTest.txt";
+		String output = "D:\\data\\working\\jdt\\BugReportRepositoryTest.txt";
+//		String output = "/Users/liwei/Documents/defect-prediction/working/BugReportTest.txt";
 		
 		@SuppressWarnings("unused")
 		Property property = Property.loadInstance();
-		BugReportRepository brRepo = new BugReportRepository();
+		brRepo = new BugReportRepository();
 		BugReportTfidfVectorizer vectorizer = new BugReportTfidfVectorizer(brRepo.getBugReports());
 		vectorizer.train();
 		vectorizer.calculateTokensWeight(brRepo.getBugReports());
+		
+		writeBugRepository(output);
+		
+	}
+	
+	public static void writeBugRepository(String output) throws Exception {
 		BufferedWriter writer = new BufferedWriter(new FileWriter(output));
-		int count = 0;
 		for (Entry<Integer, BugReport> entry : brRepo.getBugReports().entrySet()) {
-			count++;
-			if (count == 100) 
-				break;
 			StringBuilder builder = new StringBuilder();
 			BugReport bugReport = entry.getValue();
 			builder.append("BugID: " + bugReport.getBugID() + "\n");

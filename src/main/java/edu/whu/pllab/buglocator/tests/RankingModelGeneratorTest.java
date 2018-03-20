@@ -1,5 +1,7 @@
 package edu.whu.pllab.buglocator.tests;
 
+import java.io.File;
+
 import edu.whu.pllab.buglocator.Property;
 import edu.whu.pllab.buglocator.common.BugReportRepository;
 import edu.whu.pllab.buglocator.common.SourceCodeRepository;
@@ -31,6 +33,7 @@ public class RankingModelGeneratorTest {
 		
 		generator.generate(true);
 		generator.writeRankingFeatures(property.getTrainingFeaturesPath());
+		generator.saveParameters(new File(property.getFeaturesExtremumPath()));
 	}
 
 }

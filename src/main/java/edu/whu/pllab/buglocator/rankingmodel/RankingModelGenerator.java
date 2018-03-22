@@ -11,6 +11,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.PriorityQueue;
@@ -27,7 +28,7 @@ import edu.whu.pllab.buglocator.common.Method;
 import edu.whu.pllab.buglocator.common.SimilarBugReport;
 import edu.whu.pllab.buglocator.common.SourceCode;
 import edu.whu.pllab.buglocator.similarity.Similarity;
-import edu.whu.pllab.buglocator.rankingmodel.IntegratedScore.IntegratedScoreComparator;
+import edu.whu.pllab.buglocator.rankingmodel.IntegratedScore.KeyFeatureComparator;
 
 public class RankingModelGenerator {
 	
@@ -166,6 +167,9 @@ public class RankingModelGenerator {
 	public void generate(boolean isTraining) {
 		logger.info("Generating integrated scores for all bug reports... isTraining: " + isTraining);
 		
+		// clear finals
+		finals.clear();
+		
 		// create multi threads and iterate bug report, calculate features.
 		int lostBr = 0;
 		ExecutorService executor = Executors.newFixedThreadPool(Property.THREAD_COUNT);
@@ -232,19 +236,22 @@ public class RankingModelGenerator {
 			}
 			integratedScoreList.add(new IntegratedScore(code.getPath(), isModified, features));
 		}
-		// Sort and add to the final results.
-		integratedScoreList.sort(new IntegratedScoreComparator());
-		Integer count = 0;
-		for (IntegratedScore score : integratedScoreList) {
-			result.add(score);
-			if (isTraining) {
+		// if isTest, return all integratedScores, otherwise, if isTraining, reserve top CANDIDATE_SOURCE_CODE integratedScores
+		if (!isTraining) 
+			return integratedScoreList;
+		else {
+			// Sort and add to the final results.
+			integratedScoreList.sort(new KeyFeatureComparator());
+			Integer count = 0;
+			for (IntegratedScore score : integratedScoreList) {
+				result.add(score);
 				if (!score.isModified())
 					count++;
 				if (count >= CANDIDATE_SOURCE_CODE)
 					break;
 			}
+			return result;
 		}
-		return result;
 	}
 	
 	/** calculate features for given bug report and source code file, if isTraining is false, normalize features */
@@ -454,6 +461,22 @@ public class RankingModelGenerator {
 		}
 	}
 	
+	/** filter bug reports whose all fixed files do not exist in sourceCodeMap */
+	public void filterBugReports(HashMap<Integer, BugReport> bugReportsMap) {
+		Iterator<Entry<Integer, BugReport>> iter = bugReportsMap.entrySet().iterator();
+		while (iter.hasNext()) {
+			Entry<Integer, BugReport> entry = iter.next();
+			BugReport bugReport = entry.getValue();
+			boolean invalid = true;
+			for (String fixedFile : bugReport.getFixedFiles()) {
+				if (sourceCodeMap.containsKey(fixedFile))
+					invalid = false;
+			}
+			if (invalid) 
+				iter.remove();
+		}
+	}
+	
 	// setters and getters
 	public HashMap<Integer, BugReport> getBugReportsMap() {
 		return bugReportsMap;
@@ -461,6 +484,7 @@ public class RankingModelGenerator {
 	
 	public void setBugReportsMap(HashMap<Integer, BugReport> bugReportsMap) {
 		this.bugReportsMap = bugReportsMap;
+		filterBugReports(this.bugReportsMap);
 	}
 	
 	public HashMap<String, SourceCode> getSourceCodeMap() {

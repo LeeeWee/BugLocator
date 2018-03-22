@@ -80,7 +80,7 @@ public class SourceCodeTfidfVectorizer {
 		HashMap<String, Integer> tokensCount = new HashMap<String, Integer>();
 		// get tokens term frequency
 		for (String token : content) {
-			if ((token = token.trim()) == "")
+			if ((token = token.trim()).equals(""))
 				continue;
 			if (!tokensCount.containsKey(token))
 				tokensCount.put(token, 1);
@@ -110,7 +110,7 @@ public class SourceCodeTfidfVectorizer {
 		HashMap<String, Integer> tokensCount = new HashMap<String, Integer>();
 		// get tokens term frequency
 		for (String token : content) {
-			if ((token = token.trim()) == "")
+			if ((token = token.trim()).equals(""))
 				continue;
 			if (!tokensCount.containsKey(token))
 				tokensCount.put(token, 1);

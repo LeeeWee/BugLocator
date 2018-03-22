@@ -13,7 +13,7 @@ public class IntegratedScore {
 
 	public int rank;
 	/** integrated score defined as weighted sum of k features */
-	public double integratedScore;
+	private double integratedScore;
 	
 	public IntegratedScore(String path, boolean isModified, double[] features) {
 		this.path = path;
@@ -28,8 +28,10 @@ public class IntegratedScore {
 			return features[KEY_INDEX];
 	}
 	
-	public static class IntegratedScoreComparator implements Comparator<IntegratedScore> {
+	/** Comparator compare with key feature */
+	public static class KeyFeatureComparator implements Comparator<IntegratedScore> {
 		
+		@Override
 		public int compare(IntegratedScore r1, IntegratedScore r2) {
 			if (r1.getScore() > r2.getScore()) 
 				return -1;
@@ -38,6 +40,21 @@ public class IntegratedScore {
 			else 
 				return 0;
 		}
+	}
+	
+	/** Comparator compare with IntegratedScore */
+	public static class IntegratedScoreComparator implements Comparator<IntegratedScore> {
+
+		@Override
+		public int compare(IntegratedScore r1, IntegratedScore r2) {
+			if (r1.getIntegratedScore() > r2.getIntegratedScore()) 
+				return -1;
+			else if (r1.getIntegratedScore() < r2.getIntegratedScore()) 
+				return 1;
+			else 
+				return 0;
+		}
+		
 	}
 	
 	public String getPath() {

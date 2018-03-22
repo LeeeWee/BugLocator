@@ -71,7 +71,7 @@ public class BugReportTfidfVectorizer {
 			HashMap<String, Integer> tokensCount = new HashMap<String, Integer>();
 			// get tokens term frequency
 			for (String token : content) {
-				if ((token = token.trim()) == "")
+				if ((token = token.trim()).equals(""))
 					continue;
 				if (!tokensCount.containsKey(token))
 					tokensCount.put(token, 1);
@@ -102,6 +102,8 @@ public class BugReportTfidfVectorizer {
     }
 
     public double idfForWord(String word) {
+    	if (!tfidf.getVocabCache().containsWord(word))
+    		return 0.0;
         return MathUtils.idf(tfidf.getVocabCache().totalNumberOfDocs(), tfidf.getVocabCache().docAppearedIn(word));
     }
 	

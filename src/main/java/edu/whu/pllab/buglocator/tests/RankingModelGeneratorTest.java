@@ -1,11 +1,18 @@
 package edu.whu.pllab.buglocator.tests;
 
 import java.io.File;
+import java.util.HashMap;
+import java.util.List;
 
 import edu.whu.pllab.buglocator.Property;
+import edu.whu.pllab.buglocator.common.BugReport;
 import edu.whu.pllab.buglocator.common.BugReportRepository;
 import edu.whu.pllab.buglocator.common.SourceCodeRepository;
+import edu.whu.pllab.buglocator.evaluation.Evaluator;
+import edu.whu.pllab.buglocator.rankingmodel.IntegratedScore;
 import edu.whu.pllab.buglocator.rankingmodel.RankingModelGenerator;
+import edu.whu.pllab.buglocator.rankingmodel.SVMRank;
+import edu.whu.pllab.buglocator.utils.BugReportsSplitter;
 import edu.whu.pllab.buglocator.vectorizer.BugReportTfidfVectorizer;
 import edu.whu.pllab.buglocator.vectorizer.SourceCodeTfidfVectorizer;
 
@@ -17,23 +24,48 @@ public class RankingModelGeneratorTest {
 		
 		// initialize bugReport Repository
 		BugReportRepository brRepo = new BugReportRepository();
-		BugReportTfidfVectorizer brVectorizer = new BugReportTfidfVectorizer(brRepo.getBugReports());
+		
+		BugReportsSplitter validation = new BugReportsSplitter(brRepo.getBugReports(), 10);
+		List<HashMap<Integer, BugReport>> bugReportsMapList = validation.getBugReportsMapList();
+		HashMap<Integer, BugReport> trainingBugReports = bugReportsMapList.get(0);
+		HashMap<Integer, BugReport> testBugReports = bugReportsMapList.get(1);
+		List<String> lastCommitIDList = validation.getLastCommitIDList();
+		
+		// training tfidf model for training BugReorts
+		BugReportTfidfVectorizer brVectorizer = new BugReportTfidfVectorizer(trainingBugReports);
 		brVectorizer.train();
 		brVectorizer.calculateTokensWeight(brRepo.getBugReports());
 		
 		// initialize source code repository
-		SourceCodeRepository codeRepo = new SourceCodeRepository();
+		SourceCodeRepository codeRepo = new SourceCodeRepository(lastCommitIDList.get(0));
 		SourceCodeTfidfVectorizer codeVectorizer = new SourceCodeTfidfVectorizer(codeRepo.getSourceCodeMaps());
 		codeVectorizer.train();
 		codeVectorizer.calculateTokensWeight(codeRepo.getSourceCodeMaps());
 		
+		// initialize rankModelGenerator
 		RankingModelGenerator generator = new RankingModelGenerator();
-		generator.setBugReportsMap(brRepo.getBugReports());
 		generator.setSourceCodeMap(codeRepo.getSourceCodeMaps());
-		
+		// generate training data
+		generator.setBugReportsMap(trainingBugReports);
 		generator.generate(true);
 		generator.writeRankingFeatures(property.getTrainingFeaturesPath());
 		generator.saveParameters(new File(property.getFeaturesExtremumPath()));
+		// generate test data
+		generator.setBugReportsMap(testBugReports);
+		generator.generate(false);
+		generator.writeRankingFeatures(property.getTestFeaturesPath());
+		
+		// svm rank training and predicting
+		SVMRank.train(200);
+		SVMRank.predict();
+		
+		// get test integratedScores
+		HashMap<BugReport, List<IntegratedScore>> testIntegratedScores = generator.getFinals();
+		
+		//evaluate
+		Evaluator evaluator = new Evaluator(testIntegratedScores);
+		evaluator.evaluate();
+		
 	}
 
 }

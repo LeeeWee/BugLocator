@@ -1,4 +1,4 @@
-package edu.whu.pllab.BugLocator;
+package edu.whu.pllab.buglocator;
 
 import junit.framework.Test;
 import junit.framework.TestCase;

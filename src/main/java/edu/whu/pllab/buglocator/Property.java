@@ -3,24 +3,31 @@ package edu.whu.pllab.buglocator;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Properties;
 
 public class Property {
 	
-	public final static String BR_TFIDF_PATH = "bugReport.tfidf";
-	public final static String CODE_TFIDF_PATH = "sourceCode.tfidf";
-	public final static String BR_PARAGRAPH_VECTOR_PATH = "bugReport.v";
-	public final static String CODE_PARAGRAPH_VECTOR_PATH = "sourceCode.v";
-	public final static String CODE_CHANGE_HISTORY_PATH = "sourceCode.history";
-	public final static String TRAINING_FEATURES_PATH = "training.csv";
-	public final static String TEST_FEATURES_PATH = "test.csv";
-	public final static String TRAINING_MODEL_PATH = "train.model";
-	public final static String PREDICTION_PATH = "test.prediction";
-	public final static String CODE_REPO_XML_PATH = "codeRepository.xml";
-	public final static String FEATURES_EXTREMUM_PATH = "features.params";
+	private final static String TIME_STR = new SimpleDateFormat("yyyyMMddHHmmss").format(new Date());
+	
+	private final static String BR_TFIDF_PATH = "bugReport.tfidf";
+	private final static String CODE_TFIDF_PATH = "sourceCode.tfidf";
+	private final static String BR_PARAGRAPH_VECTOR_PATH = "bugReport.v";
+	private final static String CODE_PARAGRAPH_VECTOR_PATH = "sourceCode.v";
+	private final static String CODE_CHANGE_HISTORY_PATH = "sourceCode.history";
+	private final static String TRAINING_FEATURES_PATH = "train.dat";
+	private final static String TEST_FEATURES_PATH = "test.dat";
+	private final static String SVM_RANK_MODEL_PATH = "model.dat";
+	private final static String PREDICTIONS_PATH = "predictions";
+	private final static String CODE_REPO_XML_PATH = "codeRepository.xml";
+	private final static String FEATURES_EXTREMUM_PATH = "features.params";
+	private final static String EVALUATE_LOG_PATH = "evaluate_" + TIME_STR + ".log";
 	
 	public final static int THREAD_COUNT = Runtime.getRuntime().availableProcessors();
 	public final static String STOPWORDS_PATH = Property.readProperty("STOPWORDS_PATH");
+	public final static String SVM_RANK_LEARN_TOOL_PATH = Property.readProperty("SVM_RANK_LEARN_TOOL_PATH");
+	public final static String SVM_RANK_CLASSIFY_TOOL_PATH = Property.readProperty("SVM_RANK_CLASSIFY_TOOL_PATH");
 
 	private static Property p = null;
 	
@@ -36,10 +43,13 @@ public class Property {
 	private String codeChangeHistoryPath;
 	private String trainingFeaturesPath;
 	private String testFeaturesPath;
-	private String trainingModelPath;
-	private String predictionPath;
+	private String svmRankModelPath;
+	private String predictionsPath;
 	private String codeRepositoryXMLPath;
 	private String featuresExtremumPath;
+	private String evaluateLogPath;
+	
+	private int splitNum;
 	
 	/**
 	 * Constructor
@@ -93,16 +103,21 @@ public class Property {
 		String codeChangeHistoryPath = new File(workingDir, CODE_CHANGE_HISTORY_PATH).getAbsolutePath();
 		String trainingFeaturesPath = new File(workingDir, TRAINING_FEATURES_PATH).getAbsolutePath();
 		String testFeaturesPath = new File(workingDir, TEST_FEATURES_PATH).getAbsolutePath();
-		String trainingModelPath = new File(workingDir, TRAINING_MODEL_PATH).getAbsolutePath();
-		String predictionPath = new File(workingDir, PREDICTION_PATH).getAbsolutePath();
+		String svmRankModelPath = new File(workingDir, SVM_RANK_MODEL_PATH).getAbsolutePath();
+		String predictionsPath = new File(workingDir, PREDICTIONS_PATH).getAbsolutePath();
 		String codeRepositoryXMLPath = new File(workingDir, CODE_REPO_XML_PATH).getAbsolutePath();
 		String featuresExtremumPath = new File(workingDir, FEATURES_EXTREMUM_PATH).getAbsolutePath();
-		
+		String evaluateLogPath = new File(workingDir, EVALUATE_LOG_PATH).getAbsolutePath();
+		int splitNum = Integer.parseInt(Property.readProperty(targetProduct + "_" + "SPLIT_NUM"));
+		File workingDirFile = new File(workingDir);
+		if (!workingDirFile.exists()) {
+			workingDirFile.mkdirs();
+		}
 		// set properties values
 		p.setValues(product, bugFilePath, sourceCodeDir, wordVectorPath, workingDir, brTfidfModelPath,
 				codeTfidfModelPath, brParagraphVectorPath, codeParagraphVectorPath, codeChangeHistoryPath,
-				trainingFeaturesPath, testFeaturesPath, trainingModelPath, predictionPath, codeRepositoryXMLPath,
-				featuresExtremumPath);
+				trainingFeaturesPath, testFeaturesPath, svmRankModelPath, predictionsPath, codeRepositoryXMLPath,
+				featuresExtremumPath, evaluateLogPath, splitNum);
 		return p;
 	}
 	
@@ -113,8 +128,8 @@ public class Property {
 	public void setValues(String product, String bugFilePath, String sourceCodeDir, String wordVectorPath,
 			String workingDir, String brTfidfModelPath, String codeTfidfModelPath, String brParagraphVectorPath,
 			String codeParagraphVectorPath, String codeChangeHistoryPath, String trainingFeaturesPath,
-			String testFeaturesPath, String trainingModelPath, String predictionPath, String codeRepositoryXMLPath, 
-			String featuresExtremumPath) {
+			String testFeaturesPath, String svmRankModelPath, String predictionsPath, String codeRepositoryXMLPath, 
+			String featuresExtremumPath, String evaluateLogPath, int splitNum) {
 		setProduct(product);
 		setBugFilePath(bugFilePath);
 		setSourceCodeDir(sourceCodeDir);
@@ -127,10 +142,12 @@ public class Property {
 		setCodeChangeHistoryPath(codeChangeHistoryPath);
 		setTrainingFeaturesPath(trainingFeaturesPath);
 		setTestFeaturesPath(testFeaturesPath);
-		setTrainingModelPath(trainingModelPath);
-		setPredictionPath(predictionPath);
+		setSVMRankModelPath(svmRankModelPath);
+		setPredictionsPath(predictionsPath);
 		setCodeRepositoryXMLPath(codeRepositoryXMLPath);
 		setFeaturesExtremumPath(featuresExtremumPath);
+		setEvaluateLogPath(evaluateLogPath);
+		setSplitNum(splitNum);
 	}
 
 	/**
@@ -147,6 +164,8 @@ public class Property {
 		System.out.printf("Properties:");
 		System.out.printf("THREAD_COUNT: %d\n", Property.THREAD_COUNT);
 		System.out.printf("StopwordsPath: %d\n", Property.STOPWORDS_PATH);
+		System.out.printf("SVMRankToolPath: %d\n", Property.SVM_RANK_LEARN_TOOL_PATH);
+		System.out.printf("SVMClassifyToolPath: %d\n", Property.SVM_RANK_CLASSIFY_TOOL_PATH);
 		System.out.printf("Product: %s\n", getProduct());
 		System.out.printf("BugFilePath: %s\n", getBugFilePath());
 		System.out.printf("SourceCodeDir: %s\n", getSourceCodeDir());
@@ -158,8 +177,8 @@ public class Property {
 		System.out.printf("CodeParagraphVectorPath: %s\n", getCodeParagraphVectorPath());
 		System.out.printf("TrainingFeaturesPath: %s\n", getTrainingFeaturesPath());
 		System.out.printf("testFeaturesPath: %s\n", getTestFeaturesPath());
-		System.out.printf("trainingModelPath: %s\n", getTrainingModelPath());
-		System.out.printf("predictionPath: %s\n", getPredictionPath());
+		System.out.printf("SVMRankModelPath: %s\n", getSVMRankModelPath());
+		System.out.printf("predictionsPath: %s\n", getPredictionsPath());
 	}
 	
 	
@@ -259,20 +278,20 @@ public class Property {
 		this.testFeaturesPath = testFeaturesPath;
 	}
 
-	public String getTrainingModelPath() {
-		return trainingModelPath;
+	public String getSVMRankModelPath() {
+		return svmRankModelPath;
 	}
 
-	public void setTrainingModelPath(String trainingModelPath) {
-		this.trainingModelPath = trainingModelPath;
+	public void setSVMRankModelPath(String svmRankModelPath) {
+		this.svmRankModelPath = svmRankModelPath;
 	}
 
-	public String getPredictionPath() {
-		return predictionPath;
+	public String getPredictionsPath() {
+		return predictionsPath;
 	}
 
-	public void setPredictionPath(String predictionPath) {
-		this.predictionPath = predictionPath;
+	public void setPredictionsPath(String predictionsPath) {
+		this.predictionsPath = predictionsPath;
 	}
 
 	public String getCodeRepositoryXMLPath() {
@@ -290,5 +309,23 @@ public class Property {
 	public void setFeaturesExtremumPath(String featuresExtremumPath) {
 		this.featuresExtremumPath = featuresExtremumPath;
 	}
+
+	public String getEvaluateLogPath() {
+		return evaluateLogPath;
+	}
+
+	public void setEvaluateLogPath(String evaluateLogPath) {
+		this.evaluateLogPath = evaluateLogPath;
+	}
+
+	public int getSplitNum() {
+		return splitNum;
+	}
+
+	public void setSplitNum(int splitNum) {
+		this.splitNum = splitNum;
+	}
+	
+	
 	
 }

@@ -118,7 +118,9 @@ public class Evaluator {
 		
 		/** for n in N, calculate accuracy@n(top@n) */
 		private void calculateTopN() {
-			for (int i = 0; i < N[N.length - 1]; i++) {
+			for (int i = 0; i < integratedScores.size(); i++) {
+				if (i >= N[N.length - 1])
+					break;
 				IntegratedScore integratedScore = integratedScores.get(i);
 				if (bugReport.isModified(integratedScore.getPath())) {
 					synchronized (topN) {

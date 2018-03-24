@@ -20,6 +20,7 @@ import edu.whu.pllab.buglocator.common.Method;
 import edu.whu.pllab.buglocator.common.SourceCode;
 import edu.whu.pllab.buglocator.common.SourceCodeCorpus;
 import edu.whu.pllab.buglocator.common.TokenScore;
+import edu.whu.pllab.buglocator.common.TokenScore.ScoreType;
 
 public class SourceCodeTfidfVectorizer {
 	
@@ -28,6 +29,7 @@ public class SourceCodeTfidfVectorizer {
 	private TfidfVectorizer tfidf;
 	private HashMap<String, SourceCode> sourceCodeMap;
 	private String tfidfPath;
+	private ScoreType tokenScoreType = ScoreType.NTFIDF;
 	
 	public SourceCodeTfidfVectorizer() {
 		Property property = Property.getInstance();
@@ -38,6 +40,14 @@ public class SourceCodeTfidfVectorizer {
 		this.sourceCodeMap = sourceCodeMap;
 		Property property = Property.getInstance();
 		tfidfPath = property.getCodeTfidfModelPath();
+	}
+	
+	public ScoreType getTokenScoreType() {
+		return tokenScoreType;
+	}
+
+	public void setTokenScoreType(ScoreType tokenScoreType) {
+		this.tokenScoreType = tokenScoreType;
 	}
 	
 	/** fit tfidf model for given source code */
@@ -88,9 +98,41 @@ public class SourceCodeTfidfVectorizer {
 				tokensCount.put(token, tokensCount.get(token) + 1);
 			documentLength++;
 		}
+		int maxWordCount = 0;
+		double aveWordCount = 0.0;
+		if (tokenScoreType == ScoreType.NTFIDF) {
+			for (Integer count : tokensCount.values()) {
+				if (count > maxWordCount)
+					maxWordCount = count;
+			}
+		}
+		if (tokenScoreType == ScoreType.LOGTFIDF) {
+			double sumWordCount = 0.0;
+			for (Integer count : tokensCount.values())
+				sumWordCount += count;
+			aveWordCount = sumWordCount / tokensCount.size();
+		}
+		
 		for (Entry<String, Integer> tokenEntry : tokensCount.entrySet()) {
 			String token = tokenEntry.getKey();
-			double tf = tfForWord(tokenEntry.getValue(), documentLength);
+			double tf;
+			switch (tokenScoreType) {
+			case TFIDF:
+				tf = tfForWord(tokenEntry.getValue(), documentLength);
+				break;
+			case NTFIDF:
+				tf = ntfForWord(tokenEntry.getValue(), maxWordCount);
+				break;
+			case WFIDF:
+				tf = wfForWord(tokenEntry.getValue());
+				break;
+			case LOGTFIDF:
+				tf = logTfForWord(tokenEntry.getValue(), aveWordCount);
+				break;
+			default : // default type: ntf-idf
+				tf = ntfForWord(tokenEntry.getValue(), maxWordCount);
+				break;
+			}
 			double idf = idfForWord(token);
 			double tfidf = MathUtils.tfidf(tf, idf);
 			TokenScore tokenScore = new TokenScore(token, tf, idf, tfidf);
@@ -131,16 +173,28 @@ public class SourceCodeTfidfVectorizer {
 		method.setContentNorm(contentNorm);
 	}
 	
-	public double tfidfWord(String word, long wordCount, long documentLength) {
-        return MathUtils.tfidf(tfForWord(wordCount, documentLength), idfForWord(word));
-    }
-
+	
     public double tfForWord(long wordCount, long documentLength) {
         return (double) wordCount / (double) documentLength;
     }
+    
+    public double ntfForWord(long wordCount, long maxWordCount) {
+    	return 0.5 + 0.5 * (double) wordCount / maxWordCount;
+    }
+    
+    public double wfForWord(long wordCount) {
+    	return 1 + Math.log(wordCount);
+    }
+    
+    public double logTfForWord(long wordCount, double aveWordCount) {
+    	return (1 + Math.log(wordCount)) / (1 + Math.log(aveWordCount));
+    }
 
     public double idfForWord(String word) {
-        return MathUtils.idf(tfidf.getVocabCache().totalNumberOfDocs(), tfidf.getVocabCache().docAppearedIn(word));
+    	if (!tfidf.getVocabCache().containsWord(word) || tfidf.getVocabCache().totalNumberOfDocs() == 0)
+    		return 0.0;
+//        return MathUtils.idf(tfidf.getVocabCache().totalNumberOfDocs(), tfidf.getVocabCache().docAppearedIn(word));
+    	return Math.log(tfidf.getVocabCache().totalNumberOfDocs() / tfidf.getVocabCache().docAppearedIn(word));
     }
     
     

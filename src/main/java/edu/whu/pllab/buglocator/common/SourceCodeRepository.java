@@ -236,6 +236,11 @@ public class SourceCodeRepository {
 	private double getNormalizedValue(int x, double max, double min) {
 		return (6F * (x - min)) / (max - min);
 	}
+
+	/** Get length score */
+	public double getLengthScore(double len) {
+		return Math.exp(len) / (1.0D + Math.exp(len));
+	}
 	
 	/** save source code repository as xml to output path  */
 	public void saveSourceCodeRepoToXML(String output, String product) {
@@ -365,10 +370,6 @@ public class SourceCodeRepository {
 		return sourceCodeMap;
 	}
 
-	/** Get length score */
-	public double getLengthScore(double len) {
-		return Math.exp(len) / (1.0D + Math.exp(len));
-	}
 	
 	public String getVersion() {
 		return version;

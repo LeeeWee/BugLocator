@@ -25,13 +25,12 @@ import edu.whu.pllab.buglocator.vectorizer.BugReportTfidfVectorizer;
 import edu.whu.pllab.buglocator.vectorizer.SourceCodeTfidfVectorizer;
 
 
-public class SourceCodeSimilarityTest {
+public class RankBySourceCodeSimilarity {
 	
-	private static final Logger logger = LoggerFactory.getLogger(SourceCodeSimilarityTest.class);
+	private static final Logger logger = LoggerFactory.getLogger(RankBySourceCodeSimilarity.class);
 	
 	public static void main(String[] args) throws Exception {
 		
-		@SuppressWarnings("unused")
 		Property property = Property.loadInstance();
 		
 		/** record evaluate result */
@@ -51,7 +50,6 @@ public class SourceCodeSimilarityTest {
 		// train on the k fold and test on the k+1 fold, for k < n, n is folds total number
 		for (int i = 0; i < bugReportsMapList.size() - 1; i++) {
 			logger.info(String.format("Training on %d-th fold, test on %d-th fold", i, i+1));
-			@SuppressWarnings("unused")
 			HashMap<Integer, BugReport> trainingBugReports = bugReportsMapList.get(i);
 			HashMap<Integer, BugReport> testBugReports = bugReportsMapList.get(i + 1);
 			

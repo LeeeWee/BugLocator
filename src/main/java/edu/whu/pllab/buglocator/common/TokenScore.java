@@ -1,6 +1,10 @@
 package edu.whu.pllab.buglocator.common;
 
 public class TokenScore {
+	
+	public enum ScoreType {
+		TFIDF, WFIDF, NTFIDF, LOGTFIDF
+	}
 
 	private String token;
 	private double tf;

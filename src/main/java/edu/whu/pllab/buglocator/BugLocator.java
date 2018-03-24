@@ -71,12 +71,12 @@ public class BugLocator {
 				RankingModelGenerator generator = new RankingModelGenerator();
 				generator.setSourceCodeMap(codeRepo.getSourceCodeMaps());
 				// generate training data
-				generator.setBugReportsMap(trainingBugReports);
+				generator.setTrainingBugReportsMap(trainingBugReports);
 				generator.generate(true);
 				generator.writeRankingFeatures(property.getTrainingFeaturesPath());
 				generator.saveParameters(new File(property.getFeaturesExtremumPath()));
 				// generate test data
-				generator.setBugReportsMap(testBugReports);
+				generator.setTestBugReportsMap(testBugReports);
 				generator.generate(false);
 				generator.writeRankingFeatures(property.getTestFeaturesPath());
 				

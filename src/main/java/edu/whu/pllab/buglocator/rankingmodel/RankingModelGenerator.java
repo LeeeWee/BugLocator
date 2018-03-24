@@ -40,7 +40,8 @@ public class RankingModelGenerator {
 	public static final int BR_BR_SIMILARITY = Similarity.VSM;
 	public static final int BR_CODE_SIMILARITY = Similarity.VSM;
 	
-	private HashMap<Integer, BugReport> bugReportsMap;
+	private HashMap<Integer, BugReport> trainingBugReportsMap;
+	private HashMap<Integer, BugReport> testBugReportsMap;
 	private HashMap<String, SourceCode> sourceCodeMap;
 	
 	/** used to normalize sourceCodeSimilarity */
@@ -170,6 +171,11 @@ public class RankingModelGenerator {
 		// clear finals
 		finals.clear();
 		
+		HashMap<Integer, BugReport> bugReportsMap = null;
+		if (isTraining) 
+			bugReportsMap = trainingBugReportsMap;
+		else 
+			bugReportsMap = testBugReportsMap;
 		// create multi threads and iterate bug report, calculate features.
 		int lostBr = 0;
 		ExecutorService executor = Executors.newFixedThreadPool(Property.THREAD_COUNT);
@@ -300,7 +306,11 @@ public class RankingModelGenerator {
 	public double calculateClassNameSimilarity(BugReport br, SourceCode code) {
 		double classNameSimilarity = 0.0;
 		String fullClassName = code.getFullClassName();
-		String className = fullClassName.substring(fullClassName.lastIndexOf("."));
+		String className;
+		if (!fullClassName.contains("."))
+			className = fullClassName.contains("/") ? fullClassName.substring(fullClassName.lastIndexOf("/")) : fullClassName;
+		else 
+			className = fullClassName.substring(fullClassName.lastIndexOf("."));
 		if (br.getSummary().toLowerCase().contains(className.toLowerCase())) 
 			classNameSimilarity = className.length();
 //		 if (br.getDescription().toLowerCase().contains(className.toLowerCase()))
@@ -342,8 +352,8 @@ public class RankingModelGenerator {
 				if (!collaborativeFilteringScoreMap.containsKey(fixedFile))
 					collaborativeFilteringScoreMap.put(fixedFile, 0.0);
 				else 
-					collaborativeFilteringScoreMap.put(fixedFile,
-							collaborativeFilteringScoreMap.get(fixedFile) + similarBugReport.getSimilarity());
+					collaborativeFilteringScoreMap.put(fixedFile, collaborativeFilteringScoreMap.get(fixedFile)
+							+ similarBugReport.getSimilarity() / similarBugReport.getFixedFiles().size());
 			}
 		}
 		return collaborativeFilteringScoreMap;
@@ -357,9 +367,9 @@ public class RankingModelGenerator {
 	 */
 	public List<SimilarBugReport> getSimilarBugReports(BugReport br, int top) {
 		List<SimilarBugReport> similarBugReports = new ArrayList<SimilarBugReport>();
-		PriorityQueue<SimilarBugReport> heap = new PriorityQueue<SimilarBugReport>(bugReportsMap.size(),
+		PriorityQueue<SimilarBugReport> heap = new PriorityQueue<SimilarBugReport>(trainingBugReportsMap.size(),
 				new SimilarBugReport.SimilarityComparator());
-		for (Entry<Integer, BugReport> entry : bugReportsMap.entrySet()) {
+		for (Entry<Integer, BugReport> entry : trainingBugReportsMap.entrySet()) {
 			if (entry.getKey().equals(br.getBugID()))
 				continue;
 			double similarity = Similarity.similarity(br, entry.getValue(), BR_BR_SIMILARITY);
@@ -478,19 +488,26 @@ public class RankingModelGenerator {
 	}
 	
 	// setters and getters
-	public HashMap<Integer, BugReport> getBugReportsMap() {
-		return bugReportsMap;
-	}
-	
-	public void setBugReportsMap(HashMap<Integer, BugReport> bugReportsMap) {
-		this.bugReportsMap = bugReportsMap;
-		filterBugReports(this.bugReportsMap);
-	}
-	
 	public HashMap<String, SourceCode> getSourceCodeMap() {
 		return sourceCodeMap;
 	}
 	
+	public HashMap<Integer, BugReport> getTrainingBugReportsMap() {
+		return trainingBugReportsMap;
+	}
+
+	public void setTrainingBugReportsMap(HashMap<Integer, BugReport> trainingBugReportsMap) {
+		this.trainingBugReportsMap = trainingBugReportsMap;
+	}
+
+	public HashMap<Integer, BugReport> getTestBugReportsMap() {
+		return testBugReportsMap;
+	}
+
+	public void setTestBugReportsMap(HashMap<Integer, BugReport> testBugReportsMap) {
+		this.testBugReportsMap = testBugReportsMap;
+	}
+
 	public void setSourceCodeMap(HashMap<String, SourceCode> sourceCodeMap) {
 		this.sourceCodeMap = sourceCodeMap;
 	}

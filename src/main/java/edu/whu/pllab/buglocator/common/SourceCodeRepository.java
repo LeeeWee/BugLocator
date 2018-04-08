@@ -3,6 +3,7 @@ package edu.whu.pllab.buglocator.common;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
@@ -22,8 +23,12 @@ import javax.xml.transform.stream.StreamResult;
 
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.ResetCommand.ResetType;
+import org.eclipse.jgit.diff.DiffEntry;
+import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.ObjectReader;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
+import org.eclipse.jgit.treewalk.CanonicalTreeParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -47,10 +52,34 @@ public class SourceCodeRepository {
 	/** use file's absolutePath substring(sourceCodeDirNameLength+1) as file path*/
 	private int sourceCodeDirNameLength;
 	
+	/** source code dir path */
+	private String sourceCodeDir;
+	
+	/** git repository of sourceCode */
+	private Repository repo;
+	
+	/** git instance */
+	private Git git;
+	
+	/** added, modified, deleted files between two version */
+	private List<String> addedFiles;
+	private List<String> modifiedFiles;
+	private List<String> deletedFiles;
+	
 	/** Constructor */
 	public SourceCodeRepository() {
 		Property property = Property.getInstance();
-		String sourceCodeDir = property.getSourceCodeDir();
+		sourceCodeDir = property.getSourceCodeDir();
+		
+		// initialize git repository
+		try {
+			repo = FileRepositoryBuilder.create(new File(sourceCodeDir, ".git"));
+			git = new Git(repo);
+			this.version = repo.findRef("HEAD").getObjectId().getName();
+			logger.info("Current commit version id: " + this.version);
+		} catch (IOException e) {
+		}
+		
 		// initialize sourceCodeDirNameLength and sourceCodeMaps before loadSourceCodeFiles
 		sourceCodeDirNameLength = new File(sourceCodeDir).getAbsolutePath().length();
 		sourceCodeMap = new HashMap<String, SourceCode>();
@@ -73,14 +102,14 @@ public class SourceCodeRepository {
 	 */
 	public SourceCodeRepository(String version) {
 		logger.info("Resetting source code repository to version " + version + "...");
+		this.version = version;
 		Property property = Property.getInstance();
-		String sourceCodeDir = property.getSourceCodeDir();
+		sourceCodeDir = property.getSourceCodeDir();
 		// reset to given commitID version
 		try {
 			// initialize git repository
-			Repository repo = FileRepositoryBuilder.create(new File(sourceCodeDir, ".git"));
-			@SuppressWarnings("resource")
-			Git git = new Git(repo);
+			repo = FileRepositoryBuilder.create(new File(sourceCodeDir, ".git"));
+			git = new Git(repo);
 			git.reset().setMode(ResetType.HARD).setRef(version).call();
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -92,6 +121,83 @@ public class SourceCodeRepository {
 		saveSourceCodeRepoToXML(property.getCodeRepositoryXMLPath(), property.getProduct());
 		loadSourceCodeChangeHistory(property.getCodeChangeHistoryPath());
 		computeLengthScore();
+	}
+	
+	/** reset source code repository to given version, and get added, modified, deleted files */
+	public void checkout(String version) {
+		logger.info("Previous version: " + this.version + ", git checkout " + version + "...");
+		
+		// initialize or clear added, modified, deleted files list
+		if (addedFiles == null)
+			addedFiles = new ArrayList<String>();
+		else
+			addedFiles.clear();
+		if (modifiedFiles == null)
+			modifiedFiles = new ArrayList<String>();
+		else
+			modifiedFiles.clear();
+		if (deletedFiles == null)
+			deletedFiles = new ArrayList<String>();
+		else
+			deletedFiles.clear();
+		
+		// git process
+		try {
+			git.reset().setMode(ResetType.HARD).setRef(version).call();
+			
+			// get added, modified and deleted files
+			// Get the id of the tree associated to the two commits
+			ObjectId head = repo.resolve(version + "^{tree}");
+			ObjectId previousHead = repo.resolve(this.version + "^{tree}");
+			// Instanciate a reader to read the data from the Git database
+			ObjectReader reader = repo.newObjectReader();
+			// Create the tree iterator for each commit
+			CanonicalTreeParser oldTreeIter = new CanonicalTreeParser();
+			oldTreeIter.reset(reader, previousHead);
+			CanonicalTreeParser newTreeIter = new CanonicalTreeParser();
+			newTreeIter.reset(reader, head);
+			List<DiffEntry> listDiffs = git.diff().setOldTree(oldTreeIter).setNewTree(newTreeIter).call();
+			// save files to correspond list
+			for (DiffEntry diff : listDiffs) {
+				if (diff.getChangeType().equals("ADD")) 
+					addedFiles.add(new File(sourceCodeDir, diff.getNewPath()).getAbsolutePath());
+				else if (diff.getChangeType().equals("MODIFY"))
+					modifiedFiles.add(new File(sourceCodeDir, diff.getNewPath()).getAbsolutePath());
+				else if (diff.getChangeType().equals("DELETE"))
+					deletedFiles.add(new File(sourceCodeDir, diff.getOldPath()).getAbsolutePath());
+			}
+			
+			// reset verison
+			this.version = version;
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		logger.info("added: " + addedFiles.size() + "\tmodified: " + modifiedFiles.size() + "\tdeleted: "
+				+ deletedFiles.size());
+		
+		// remove deletedFiles and change added and modified files from sourceCodeMap
+		List<String> addedAndModifiedFiles = new ArrayList<String>();
+		addedAndModifiedFiles.addAll(addedFiles);
+		addedAndModifiedFiles.addAll(modifiedFiles);
+		
+		for (String filePath : modifiedFiles) {
+			String path = filePath.substring(sourceCodeDirNameLength + 1).replaceAll("\\\\", "/");
+			sourceCodeMap.remove(path);
+		}
+		for (String filePath: deletedFiles) {
+			String path = filePath.substring(sourceCodeDirNameLength + 1).replaceAll("\\\\", "/");
+			sourceCodeMap.remove(path);
+		}
+		
+		ExecutorService executor = Executors.newFixedThreadPool(Property.THREAD_COUNT);
+		for (String javaFilePath : addedAndModifiedFiles) {
+			Runnable worker = new WorkerThread(javaFilePath);
+			executor.execute(worker);
+		}
+		executor.shutdown();
+		while (!executor.isTerminated()) {
+		}
 	}
 	
 	/**
@@ -369,7 +475,15 @@ public class SourceCodeRepository {
 		logger.info("Finished parsing, total " + sourceCodeMap.size() + " java files.");
 		return sourceCodeMap;
 	}
-
+	
+	/** attach related bug reports info to source code */
+	public void attachRelatedBugReports(HashMap<Integer, BugReport> bugReportMap) {
+		for (BugReport bugReport : bugReportMap.values()) {
+			for (String fixedFile : bugReport.getFixedFiles()) {
+				sourceCodeMap.get(fixedFile).getRelatedBugReportList().add(bugReport);
+			}
+		}
+	}
 	
 	public String getVersion() {
 		return version;
@@ -385,6 +499,18 @@ public class SourceCodeRepository {
 
 	public void setSourceCodeMaps(HashMap<String, SourceCode> sourceCodeMaps) {
 		this.sourceCodeMap = sourceCodeMaps;
+	}
+
+	public List<String> getAddedFiles() {
+		return addedFiles;
+	}
+
+	public List<String> getModifiedFiles() {
+		return modifiedFiles;
+	}
+
+	public List<String> getDeletedFiles() {
+		return deletedFiles;
 	}
 
 	

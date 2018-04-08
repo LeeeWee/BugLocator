@@ -343,6 +343,13 @@ public class RankingModelGenerator {
 		return frequency;
 	}
 	
+	//TODO
+	/**
+	public double calculateCollaborativeFilteringScore(BugReport br, SourceCode code) {
+		
+	}
+	*/
+	
 	/** calculate collaborative filter score for given bug report */
 	public HashMap<String, Double> calculateCollaborativeFilteringScore(BugReport br) {
 		HashMap<String, Double> collaborativeFilteringScoreMap = new HashMap<String, Double>();

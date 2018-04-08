@@ -6,7 +6,7 @@ import java.util.Calendar;
 import java.util.Date;
 
 public class DateTest {
-
+	
 	public static void main(String[] args) throws ParseException {
 		
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");

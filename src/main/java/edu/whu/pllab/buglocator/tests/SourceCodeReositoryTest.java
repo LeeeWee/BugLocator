@@ -20,13 +20,13 @@ public class SourceCodeReositoryTest {
 		@SuppressWarnings("unused")
 		Property property = Property.loadInstance();
 		SourceCodeRepository repo = new SourceCodeRepository();
-		SourceCodeTfidfVectorizer vectorizer = new SourceCodeTfidfVectorizer(repo.getSourceCodeMaps());
+		SourceCodeTfidfVectorizer vectorizer = new SourceCodeTfidfVectorizer(repo.getSourceCodeMap());
 		vectorizer.train();
-		vectorizer.calculateTokensWeight(repo.getSourceCodeMaps());
+		vectorizer.calculateTokensWeight(repo.getSourceCodeMap());
 		
 		BufferedWriter writer = new BufferedWriter(new FileWriter(output));
 //		int count = 0;
-		for (Entry<String, SourceCode> entry : repo.getSourceCodeMaps().entrySet()) {
+		for (Entry<String, SourceCode> entry : repo.getSourceCodeMap().entrySet()) {
 //			count++;
 //			if (count == 100) 
 //				break;

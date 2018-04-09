@@ -72,7 +72,7 @@ public class RankByCollaborativeFilteringScore {
 			brVectorizer.calculateTokensWeight(trainingBugReports);
 			brVectorizer.calculateTokensWeight(testBugReports);
 			
-			filterBugReports(testBugReports, codeRepo.getSourceCodeMaps());
+			filterBugReports(testBugReports, codeRepo.getSourceCodeMap());
 			
 			HashMap<BugReport, List<IntegratedScore>> testIntegratedScores = sortByCollaborativeFilteringScore();
 			

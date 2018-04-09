@@ -56,9 +56,9 @@ public class BugLocator {
 				
 				// reset source code repository to the i-th lastCommitID version, and train tfidf model
 				SourceCodeRepository codeRepo = new SourceCodeRepository(lastCommitIDList.get(i));
-				SourceCodeTfidfVectorizer codeVectorizer = new SourceCodeTfidfVectorizer(codeRepo.getSourceCodeMaps());
+				SourceCodeTfidfVectorizer codeVectorizer = new SourceCodeTfidfVectorizer(codeRepo.getSourceCodeMap());
 				codeVectorizer.train();
-				codeVectorizer.calculateTokensWeight(codeRepo.getSourceCodeMaps());
+				codeVectorizer.calculateTokensWeight(codeRepo.getSourceCodeMap());
 				
 				// train tfidf model using training bug reports
 				BugReportTfidfVectorizer brVectorizer = new BugReportTfidfVectorizer(trainingBugReports);
@@ -69,7 +69,7 @@ public class BugLocator {
 				
 				// initialize rankModelGenerator
 				RankingModelGenerator generator = new RankingModelGenerator();
-				generator.setSourceCodeMap(codeRepo.getSourceCodeMaps());
+				generator.setSourceCodeMap(codeRepo.getSourceCodeMap());
 				// generate training data
 				generator.setTrainingBugReportsMap(trainingBugReports);
 				generator.generate(true);

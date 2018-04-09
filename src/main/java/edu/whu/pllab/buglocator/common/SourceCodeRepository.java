@@ -24,6 +24,7 @@ import javax.xml.transform.stream.StreamResult;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.ResetCommand.ResetType;
 import org.eclipse.jgit.diff.DiffEntry;
+import org.eclipse.jgit.diff.DiffEntry.ChangeType;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectReader;
 import org.eclipse.jgit.lib.Repository;
@@ -61,10 +62,18 @@ public class SourceCodeRepository {
 	/** git instance */
 	private Git git;
 	
+	/** store change history of each file to help quickly setting change history for
+	 * new source code file after checkout */
+	private HashMap<String, long[]> changeHistory;
+	
+	/** store related BugReports of each file to help quickly setting related BugReports for
+	 * new source code file after checkout */
+	private HashMap<String, List<BugReport>> relatedBugReports;
+	
 	/** added, modified, deleted files between two version */
-	private List<String> addedFiles;
-	private List<String> modifiedFiles;
-	private List<String> deletedFiles;
+	private HashMap<String, SourceCode> addedFiles;
+	private HashMap<String, SourceCode> modifiedFiles;
+	private HashMap<String, SourceCode> deletedFiles;
 	
 	/** Constructor */
 	public SourceCodeRepository() {
@@ -129,17 +138,21 @@ public class SourceCodeRepository {
 		
 		// initialize or clear added, modified, deleted files list
 		if (addedFiles == null)
-			addedFiles = new ArrayList<String>();
+			addedFiles = new HashMap<String, SourceCode>();
 		else
 			addedFiles.clear();
 		if (modifiedFiles == null)
-			modifiedFiles = new ArrayList<String>();
+			modifiedFiles = new HashMap<String, SourceCode>();
 		else
 			modifiedFiles.clear();
 		if (deletedFiles == null)
-			deletedFiles = new ArrayList<String>();
+			deletedFiles = new HashMap<String, SourceCode>();
 		else
 			deletedFiles.clear();
+		
+		List<String> addedFilesList = new ArrayList<String>();
+		List<String> modifiedFilesList = new ArrayList<String>();
+		List<String> deletedFilesList = new ArrayList<String>();
 		
 		// git process
 		try {
@@ -159,12 +172,21 @@ public class SourceCodeRepository {
 			List<DiffEntry> listDiffs = git.diff().setOldTree(oldTreeIter).setNewTree(newTreeIter).call();
 			// save files to correspond list
 			for (DiffEntry diff : listDiffs) {
-				if (diff.getChangeType().equals("ADD")) 
-					addedFiles.add(new File(sourceCodeDir, diff.getNewPath()).getAbsolutePath());
-				else if (diff.getChangeType().equals("MODIFY"))
-					modifiedFiles.add(new File(sourceCodeDir, diff.getNewPath()).getAbsolutePath());
-				else if (diff.getChangeType().equals("DELETE"))
-					deletedFiles.add(new File(sourceCodeDir, diff.getOldPath()).getAbsolutePath());
+				if (diff.getChangeType() == ChangeType.ADD) {
+					if (!diff.getNewPath().endsWith(".java"))
+						continue;
+					addedFilesList.add(new File(sourceCodeDir, diff.getNewPath()).getAbsolutePath());
+				}
+				else if (diff.getChangeType()== ChangeType.MODIFY) {
+					if (!diff.getNewPath().endsWith(".java"))
+						continue;
+					modifiedFilesList.add(new File(sourceCodeDir, diff.getNewPath()).getAbsolutePath());
+				}
+				else if (diff.getChangeType()== ChangeType.DELETE) {
+					if (!diff.getOldPath().endsWith(".java"))
+						continue;
+					deletedFilesList.add(new File(sourceCodeDir, diff.getOldPath()).getAbsolutePath());
+				}
 			}
 			
 			// reset verison
@@ -173,19 +195,19 @@ public class SourceCodeRepository {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		logger.info("added: " + addedFiles.size() + "\tmodified: " + modifiedFiles.size() + "\tdeleted: "
-				+ deletedFiles.size());
+		logger.info("added: " + addedFilesList.size() + "\tmodified: " + modifiedFilesList.size() + "\tdeleted: "
+				+ deletedFilesList.size());
 		
 		// remove deletedFiles and change added and modified files from sourceCodeMap
 		List<String> addedAndModifiedFiles = new ArrayList<String>();
-		addedAndModifiedFiles.addAll(addedFiles);
-		addedAndModifiedFiles.addAll(modifiedFiles);
+		addedAndModifiedFiles.addAll(addedFilesList);
+		addedAndModifiedFiles.addAll(modifiedFilesList);
 		
-		for (String filePath : modifiedFiles) {
+		for (String filePath : modifiedFilesList) {
 			String path = filePath.substring(sourceCodeDirNameLength + 1).replaceAll("\\\\", "/");
 			sourceCodeMap.remove(path);
 		}
-		for (String filePath: deletedFiles) {
+		for (String filePath: deletedFilesList) {
 			String path = filePath.substring(sourceCodeDirNameLength + 1).replaceAll("\\\\", "/");
 			sourceCodeMap.remove(path);
 		}
@@ -198,6 +220,10 @@ public class SourceCodeRepository {
 		executor.shutdown();
 		while (!executor.isTerminated()) {
 		}
+		
+		// update change history and related bugReports
+		setSourceCodeChangeHistory(addedAndModifiedFiles);
+		attachRelatedBugReports(addedAndModifiedFiles);
 	}
 	
 	/**
@@ -260,6 +286,7 @@ public class SourceCodeRepository {
 	
 	/** load source code change history from history file */
 	public void loadSourceCodeChangeHistory(String historyFilePath) {
+		changeHistory = new HashMap<String, long[]>();
 		logger.info("Load source code files' change history..."); 
 		try {
 			BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(historyFilePath), "UTF-8"));
@@ -271,14 +298,22 @@ public class SourceCodeRepository {
 				long[] values = new long[times.length];
 				for (int i = 0; i < times.length; i++) {
 					values[i] = Long.parseLong(times[i].trim());
-					SourceCode sourceCode = sourceCodeMap.get(path);
-					if (sourceCode != null) 
-						sourceCode.setChangeHistory(values);
 				}
+				changeHistory.put(path, values);
+				SourceCode sourceCode = sourceCodeMap.get(path);
+				if (sourceCode != null) 
+					sourceCode.setChangeHistory(values);
 			}
 			reader.close();
 		} catch (Exception e) {
 			e.printStackTrace();
+		}
+	}
+	
+	public void setSourceCodeChangeHistory(List<String> newSourceCodeList) {
+		for (String path : newSourceCodeList) {
+			SourceCode sourceCode = sourceCodeMap.get(path);
+			sourceCode.setChangeHistory(changeHistory.get(path));
 		}
 	}
 	
@@ -478,11 +513,28 @@ public class SourceCodeRepository {
 	
 	/** attach related bug reports info to source code */
 	public void attachRelatedBugReports(HashMap<Integer, BugReport> bugReportMap) {
+		relatedBugReports = new HashMap<String, List<BugReport>>();
 		for (BugReport bugReport : bugReportMap.values()) {
 			for (String fixedFile : bugReport.getFixedFiles()) {
+				if (!relatedBugReports.containsKey(fixedFile)) {
+					List<BugReport> relatedBugReportsList = new ArrayList<BugReport>();
+					relatedBugReports.put(fixedFile, relatedBugReportsList);
+				}
+				relatedBugReports.get(fixedFile).add(bugReport);
 				sourceCodeMap.get(fixedFile).getRelatedBugReportList().add(bugReport);
 			}
 		}
+	}
+	
+	public void attachRelatedBugReports(List<String> newSourceCodeList) {
+		for (String path : newSourceCodeList) {
+			SourceCode sourceCode = sourceCodeMap.get(path);
+			sourceCode.setRelatedBugReportList(relatedBugReports.get(path));
+		}
+	}
+	
+	public void attachRelatedBugReportsForNewSourceCode(HashMap<Integer, BugReport> bugReportMap) {
+		
 	}
 	
 	public String getVersion() {
@@ -493,7 +545,7 @@ public class SourceCodeRepository {
 		this.version = version;
 	}
 
-	public HashMap<String, SourceCode> getSourceCodeMaps() {
+	public HashMap<String, SourceCode> getSourceCodeMap() {
 		return sourceCodeMap;
 	}
 
@@ -501,15 +553,15 @@ public class SourceCodeRepository {
 		this.sourceCodeMap = sourceCodeMaps;
 	}
 
-	public List<String> getAddedFiles() {
+	public HashMap<String, SourceCode> getAddedFiles() {
 		return addedFiles;
 	}
 
-	public List<String> getModifiedFiles() {
+	public HashMap<String, SourceCode> getModifiedFiles() {
 		return modifiedFiles;
 	}
 
-	public List<String> getDeletedFiles() {
+	public HashMap<String, SourceCode> getDeletedFiles() {
 		return deletedFiles;
 	}
 

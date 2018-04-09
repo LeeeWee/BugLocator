@@ -1,21 +1,14 @@
 package edu.whu.pllab.buglocator.vectorizer;
 
-import java.io.File;
+import java.util.AbstractMap;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map.Entry;
 
-import org.deeplearning4j.bagofwords.vectorizer.TfidfVectorizer;
-import org.deeplearning4j.text.sentenceiterator.BaseSentenceIterator;
-import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
-import org.deeplearning4j.text.sentenceiterator.SentencePreProcessor;
-import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.deeplearning4j.util.MathUtils;
-import org.nd4j.linalg.util.SerializationUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import edu.whu.pllab.buglocator.Property;
 import edu.whu.pllab.buglocator.common.Method;
 import edu.whu.pllab.buglocator.common.SourceCode;
 import edu.whu.pllab.buglocator.common.SourceCodeCorpus;
@@ -26,48 +19,35 @@ public class SourceCodeTfidfVectorizer {
 	
 	private static final Logger logger = LoggerFactory.getLogger(BugReportTfidfVectorizer.class);
 	
-	private TfidfVectorizer tfidf;
+	private TfidfVectorizer<String> tfidf;
 	private HashMap<String, SourceCode> sourceCodeMap;
-	private String tfidfPath;
 	private ScoreType tokenScoreType = ScoreType.NTFIDF;
 	
 	public SourceCodeTfidfVectorizer() {
-		Property property = Property.getInstance();
-		tfidfPath = property.getCodeTfidfModelPath();
 	}
 	
 	public SourceCodeTfidfVectorizer(HashMap<String, SourceCode> sourceCodeMap) {
 		this.sourceCodeMap = sourceCodeMap;
-		Property property = Property.getInstance();
-		tfidfPath = property.getCodeTfidfModelPath();
 	}
 	
-	public ScoreType getTokenScoreType() {
-		return tokenScoreType;
-	}
 
-	public void setTokenScoreType(ScoreType tokenScoreType) {
-		this.tokenScoreType = tokenScoreType;
-	}
-	
 	/** fit tfidf model for given source code */
 	public void train() {
 		logger.info("Fitting tfidf model for source code corpus...");
-		SentenceIterator iter = new SourceCodeSentenceIterator(sourceCodeMap);
-		tfidf = new TfidfVectorizer.Builder()
-							.setIterator(iter)
-							.setMinWordFrequency(0)
-							.setTokenizerFactory(new DefaultTokenizerFactory())
-							.build();
+		SentenceIterator<String> iter = new SourceCodeSentenceIterator(sourceCodeMap);
+		tfidf = new TfidfVectorizer<String>(iter, 0);
 		tfidf.fit();
-		SerializationUtils.saveObject(tfidf, new File(tfidfPath));
 	}
 	
-	/** load tfidf model from tfidf model path */
-	public void loadTfidfModel() {
-		logger.info("Loading tfidf model for bug reports corpus...");
-		tfidf = SerializationUtils.readObject(new File(tfidfPath));
-	}
+	/** update tfidf model after git checkout */
+	public void update(HashMap<String, SourceCode> addedFiles, HashMap<String, SourceCode> modifiedFiles,
+			HashMap<String, SourceCode> deletedFiles) {
+		// update tfidf
+		SentenceIterator<String> addedSentenceIter = new SourceCodeSentenceIterator(addedFiles);
+		SentenceIterator<String> modifiedSentenceIter = new SourceCodeSentenceIterator(modifiedFiles);
+		SentenceIterator<String> deletedSentenceIter = new SourceCodeSentenceIterator(deletedFiles);
+		tfidf.update(addedSentenceIter, modifiedSentenceIter, deletedSentenceIter);
+	}	
 	
 	/** calculate tokens tf, idf and tokensWeight for source code corpus and methods in source code, and set content Norm value */
 	public void calculateTokensWeight(HashMap<String, SourceCode> sourceCodeMap) {
@@ -160,9 +140,40 @@ public class SourceCodeTfidfVectorizer {
 				tokensCount.put(token, tokensCount.get(token) + 1);
 			documentLength++;
 		}
+		int maxWordCount = 0;
+		double aveWordCount = 0.0;
+		if (tokenScoreType == ScoreType.NTFIDF) {
+			for (Integer count : tokensCount.values()) {
+				if (count > maxWordCount)
+					maxWordCount = count;
+			}
+		}
+		if (tokenScoreType == ScoreType.LOGTFIDF) {
+			double sumWordCount = 0.0;
+			for (Integer count : tokensCount.values())
+				sumWordCount += count;
+			aveWordCount = sumWordCount / tokensCount.size();
+		}
 		for (Entry<String, Integer> tokenEntry : tokensCount.entrySet()) {
 			String token = tokenEntry.getKey();
-			double tf = tfForWord(tokenEntry.getValue(), documentLength);
+			double tf;
+			switch (tokenScoreType) {
+			case TFIDF:
+				tf = tfForWord(tokenEntry.getValue(), documentLength);
+				break;
+			case NTFIDF:
+				tf = ntfForWord(tokenEntry.getValue(), maxWordCount);
+				break;
+			case WFIDF:
+				tf = wfForWord(tokenEntry.getValue());
+				break;
+			case LOGTFIDF:
+				tf = logTfForWord(tokenEntry.getValue(), aveWordCount);
+				break;
+			default : // default type: ntf-idf
+				tf = ntfForWord(tokenEntry.getValue(), maxWordCount);
+				break;
+			}
 			double idf = idfForWord(token);
 			double tfidf = MathUtils.tfidf(tf, idf);
 			TokenScore tokenScore = new TokenScore(token, tf, idf, tfidf);
@@ -183,44 +194,39 @@ public class SourceCodeTfidfVectorizer {
     }
     
     public double wfForWord(long wordCount) {
-    	return 1 + Math.log(wordCount);
+    	return 1 + Math.log10(wordCount);
     }
     
     public double logTfForWord(long wordCount, double aveWordCount) {
-    	return (1 + Math.log(wordCount)) / (1 + Math.log(aveWordCount));
+    	return (1 + Math.log10(wordCount)) / (1 + Math.log10(aveWordCount));
     }
 
     public double idfForWord(String word) {
-    	if (!tfidf.getVocabCache().containsWord(word) || tfidf.getVocabCache().totalNumberOfDocs() == 0)
-    		return 0.0;
-//        return MathUtils.idf(tfidf.getVocabCache().totalNumberOfDocs(), tfidf.getVocabCache().docAppearedIn(word));
-    	return Math.log(tfidf.getVocabCache().totalNumberOfDocs() / tfidf.getVocabCache().docAppearedIn(word));
+    	return tfidf.idfForWord(word);
     }
-    
     
 	
 	/** Source Code Sentence Iterator help training tfidf model */
-	private class SourceCodeSentenceIterator extends BaseSentenceIterator {
+	private class SourceCodeSentenceIterator implements SentenceIterator<String> {
 
-		private Iterator<SourceCode> iter;
+		private Iterator<Entry<String, SourceCode>> iter;
 		private HashMap<String, SourceCode> sourceCodeMap;
 		
-		public SourceCodeSentenceIterator(SentencePreProcessor preProcessor, HashMap<String, SourceCode> sourceCodeMap) {
-			super(preProcessor);
-			this.sourceCodeMap = sourceCodeMap;
-			this.iter = sourceCodeMap.values().iterator();
-		}
-		
 		public SourceCodeSentenceIterator(HashMap<String, SourceCode> sourceCodeMap) {
-			this(null, sourceCodeMap);
+			iter = sourceCodeMap.entrySet().iterator();
+			this.sourceCodeMap = sourceCodeMap;
 		}
 		
-		public String nextSentence() {
-			SourceCode sourceCode = iter.next();
-			String ret = sourceCode.getSourceCodeCorpus().getContent();
-			if (this.getPreProcessor() != null)
-				ret = this.getPreProcessor().preProcess(ret);
-			return ret;
+		public Entry<String, String> nextEntry() {
+			Entry<String, SourceCode> entry = iter.next();
+			String path = entry.getKey();
+			// deleted sentenceIter value is null
+			if (entry.getKey() == null)
+				return new AbstractMap.SimpleEntry<String, String>(path, null);
+			else {
+				String content = entry.getValue().getSourceCodeCorpus().getContent();
+				return new AbstractMap.SimpleEntry<String, String>(path, content);
+			}
 		}
 
 		public boolean hasNext() {
@@ -228,9 +234,25 @@ public class SourceCodeTfidfVectorizer {
 		}
 
 		public void reset() {
-			iter = sourceCodeMap.values().iterator();
+			iter = sourceCodeMap.entrySet().iterator();
+		}
+
+		public int size() {
+			return sourceCodeMap.size();
 		}
 	}
 	
+
+	public ScoreType getTokenScoreType() {
+		return tokenScoreType;
+	}
+
+	public void setTokenScoreType(ScoreType tokenScoreType) {
+		this.tokenScoreType = tokenScoreType;
+	}
+	
+	public TfidfVectorizer<String> getTfidf() {
+		return tfidf;
+	}
 	
 }

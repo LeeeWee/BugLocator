@@ -38,13 +38,13 @@ public class RankingModelGeneratorTest {
 		
 		// initialize source code repository
 		SourceCodeRepository codeRepo = new SourceCodeRepository(lastCommitIDList.get(0));
-		SourceCodeTfidfVectorizer codeVectorizer = new SourceCodeTfidfVectorizer(codeRepo.getSourceCodeMaps());
+		SourceCodeTfidfVectorizer codeVectorizer = new SourceCodeTfidfVectorizer(codeRepo.getSourceCodeMap());
 		codeVectorizer.train();
-		codeVectorizer.calculateTokensWeight(codeRepo.getSourceCodeMaps());
+		codeVectorizer.calculateTokensWeight(codeRepo.getSourceCodeMap());
 		
 		// initialize rankModelGenerator
 		RankingModelGenerator generator = new RankingModelGenerator();
-		generator.setSourceCodeMap(codeRepo.getSourceCodeMaps());
+		generator.setSourceCodeMap(codeRepo.getSourceCodeMap());
 		// generate training data
 		generator.setTrainingBugReportsMap(trainingBugReports);
 		generator.generate(true);

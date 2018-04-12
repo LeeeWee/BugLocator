@@ -16,15 +16,28 @@ public class BugReportCorpus {
 	/** used when calculating similarity */
 	private double contentNorm;
 	
+	/** calculate similarity with Structured Information Retrieval */
+	private double summaryNorm;
+	
+	private double descriptionNorm;
+	
 	/** content tokens that contains tfidf and weight info */
 	private HashMap<String, TokenScore> contentTokens;
+	
+	private HashMap<String, TokenScore> summartTokens;
+	
+	private HashMap<String, TokenScore> descriptionTokens;
 	
 	public BugReportCorpus() {
 		this.content = "";
 		this.summaryPart = "";
 		this.descriptionPart = "";
 		this.contentNorm = 0.0;
+		this.summaryNorm = 0.0;
+		this.descriptionNorm = 0.0;
 		this.contentTokens = new HashMap<String, TokenScore>();
+		this.summartTokens = new HashMap<String, TokenScore>();
+		this.descriptionTokens = new HashMap<String, TokenScore>();
 	}
 	
 	public BugReportCorpus(String summaryPart, String descriptionPart) {
@@ -32,7 +45,11 @@ public class BugReportCorpus {
 		this.summaryPart = summaryPart;
 		this.descriptionPart = descriptionPart;
 		this.contentNorm = 0.0;
+		this.summaryNorm = 0.0;
+		this.descriptionNorm = 0.0;
 		this.contentTokens = new HashMap<String, TokenScore>();
+		this.summartTokens = new HashMap<String, TokenScore>();
+		this.descriptionTokens = new HashMap<String, TokenScore>();
 	}
 
 	public String getContent() {
@@ -74,5 +91,38 @@ public class BugReportCorpus {
 	public void setContentNorm(double contentNorm) {
 		this.contentNorm = contentNorm;
 	}
+
+	public double getSummaryNorm() {
+		return summaryNorm;
+	}
+
+	public void setSummaryNorm(double summaryNorm) {
+		this.summaryNorm = summaryNorm;
+	}
+
+	public double getDescriptionNorm() {
+		return descriptionNorm;
+	}
+
+	public void setDescriptionNorm(double descriptionNorm) {
+		this.descriptionNorm = descriptionNorm;
+	}
+
+	public HashMap<String, TokenScore> getSummartTokens() {
+		return summartTokens;
+	}
+
+	public void setSummartTokens(HashMap<String, TokenScore> summartTokens) {
+		this.summartTokens = summartTokens;
+	}
+
+	public HashMap<String, TokenScore> getDescriptionTokens() {
+		return descriptionTokens;
+	}
+
+	public void setDescriptionTokens(HashMap<String, TokenScore> descriptionTokens) {
+		this.descriptionTokens = descriptionTokens;
+	}
+	
 
 }

@@ -311,7 +311,8 @@ public class SourceCodeRepository {
 	}
 	
 	public void setSourceCodeChangeHistory(List<String> newSourceCodeList) {
-		for (String path : newSourceCodeList) {
+		for (String filePath : newSourceCodeList) {
+			String path = filePath.substring(sourceCodeDirNameLength + 1).replaceAll("\\\\", "/");
 			SourceCode sourceCode = sourceCodeMap.get(path);
 			sourceCode.setChangeHistory(changeHistory.get(path));
 		}
@@ -527,7 +528,10 @@ public class SourceCodeRepository {
 	}
 	
 	public void attachRelatedBugReports(List<String> newSourceCodeList) {
-		for (String path : newSourceCodeList) {
+		if (relatedBugReports == null)
+			return;
+		for (String filePath : newSourceCodeList) {
+			String path = filePath.substring(sourceCodeDirNameLength + 1).replaceAll("\\\\", "/");
 			SourceCode sourceCode = sourceCodeMap.get(path);
 			sourceCode.setRelatedBugReportList(relatedBugReports.get(path));
 		}

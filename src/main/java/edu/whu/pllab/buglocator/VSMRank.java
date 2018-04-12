@@ -6,6 +6,8 @@ import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
 
@@ -18,6 +20,7 @@ import org.slf4j.LoggerFactory;
 
 import edu.whu.pllab.buglocator.common.BugReport;
 import edu.whu.pllab.buglocator.common.BugReportRepository;
+import edu.whu.pllab.buglocator.common.Method;
 import edu.whu.pllab.buglocator.common.SourceCode;
 import edu.whu.pllab.buglocator.common.SourceCodeRepository;
 import edu.whu.pllab.buglocator.evaluation.Evaluator;
@@ -28,14 +31,14 @@ import edu.whu.pllab.buglocator.vectorizer.SourceCodeTfidfVectorizer;
 
 public class VSMRank {
 	
-	@SuppressWarnings("unused")
 	private static final Logger logger = LoggerFactory.getLogger(BugLocator.class);
 	
 	private static final String INVALID_BUG_REPORT_PATH = "invalidBugReports.txt";
 	
 	public static void main(String[] args) throws Exception {
 		
-		String[] products = {"ASPECTJ", "SWT", "BIRT", "ECLIPSE_PLATFORM_UI", "TOMCAT", "JDT"};
+//		String[] products = {"ASPECTJ", "SWT", "BIRT", "ECLIPSE_PLATFORM_UI", "TOMCAT", "JDT"};
+		String[] products = {"ECLIPSE_PLATFORM_UI"};
 		
 		for (String product : products) {
 			Property property = Property.loadInstance(product);
@@ -57,6 +60,19 @@ public class VSMRank {
 				}
 			});
 			
+			// retain bugs in testing_data in XinYe dir
+			String[] testingFiles = new File("D:\\data\\XinYe\\eclipse.platform.ui\\testing_data").list();
+			HashSet<Integer> testingBugs = new HashSet<Integer>();
+			for (String testingFile : testingFiles) 
+				testingBugs.add(Integer.parseInt(testingFile.substring(0, testingFile.lastIndexOf("."))));
+			Iterator<BugReport> iter = bugReportsList.iterator();
+			while (iter.hasNext()) {
+				BugReport br = iter.next();
+				if (!testingBugs.contains(br.getBugID()))
+					iter.remove();
+			}
+			logger.info("Bugs: " + bugReportsList.size());
+			
 			String earliestCommitID = bugReportsList.get(0).getCommitID();
 			
 			// reset source code repository to the earliestCommitID~ version, and train tfidf model
@@ -66,6 +82,7 @@ public class VSMRank {
 				Repository repo = FileRepositoryBuilder.create(new File(property.getSourceCodeDir(), ".git"));
 				Git git = new Git(repo);
 				git.reset().setMode(ResetType.HARD).setRef(earliestCommitID + "~").call();
+				git.close();
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -113,7 +130,7 @@ public class VSMRank {
 						break;
 					}
 				}
-				if (isValid) {
+				if (!isValid) {
 					invalidBugReportsWriter.write(bugReport.getBugID() + "\n");
 				}
 				integratedScoresMap.put(bugReport, integratedScores);
@@ -132,7 +149,12 @@ public class VSMRank {
 			HashMap<String, SourceCode> sourceCodeMap) {
 		List<IntegratedScore> integratedScoreList = new ArrayList<IntegratedScore>();
 		for (Entry<String, SourceCode> entry : sourceCodeMap.entrySet()) {
-			double similarity = Similarity.vsmSimilarity(bugReport, entry.getValue());
+			double similarity = Similarity.similarity(bugReport, entry.getValue(), Similarity.VSM);
+			for (Method method : entry.getValue().getMethodList()) {
+				double methodSimilarity = Similarity.similarity(bugReport, method, Similarity.VSM);
+				if (methodSimilarity > similarity)
+					similarity = methodSimilarity;
+			}
 			IntegratedScore score = new IntegratedScore(entry.getKey(), false, null);
 			score.setIntegratedScore(similarity);
 			integratedScoreList.add(score);

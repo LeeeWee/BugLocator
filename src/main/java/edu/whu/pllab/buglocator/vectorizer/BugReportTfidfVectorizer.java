@@ -1,18 +1,15 @@
 package edu.whu.pllab.buglocator.vectorizer;
 
 import java.util.AbstractMap;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map.Entry;
 
-import org.deeplearning4j.util.MathUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import edu.whu.pllab.buglocator.common.BugReport;
 import edu.whu.pllab.buglocator.common.BugReportCorpus;
-import edu.whu.pllab.buglocator.common.TokenScore;
 import edu.whu.pllab.buglocator.common.TokenScore.ScoreType;
 
 public class BugReportTfidfVectorizer {
@@ -39,7 +36,6 @@ public class BugReportTfidfVectorizer {
 	}
 	
 	public BugReportTfidfVectorizer(HashMap<Integer, BugReport> bugReportsMap) {
-		usingCodeTfidf = false;
 		this.bugReportsMap = bugReportsMap;
 	}
 	
@@ -62,86 +58,24 @@ public class BugReportTfidfVectorizer {
 	
 	/** calculate tokens tf, idf and tokensWeight for single bug report, and set content Norm value */
 	public void calculateTokensWeight(BugReport bugReport) {
-		double contentNorm = 0.0;
-		int documentLength = 0;
 		BugReportCorpus bugReportCorpus = bugReport.getBugReportCorpus();
-		String[] content = bugReportCorpus.getContent().split(" ");
-		HashMap<String, TokenScore> contentTokens = bugReportCorpus.getContentTokens();
-		HashMap<String, Integer> tokensCount = new HashMap<String, Integer>();
-		// get tokens term frequency
-		for (String token : content) {
-			if ((token = token.trim()).equals(""))
-				continue;
-			if (!tokensCount.containsKey(token))
-				tokensCount.put(token, 1);
-			else
-				tokensCount.put(token, tokensCount.get(token) + 1);
-			documentLength++;
+		if (usingCodeTfidf) {
+			bugReportCorpus.setContentTokens(codeTfidf.vectorize(bugReportCorpus.getContent(), tokenScoreType));
+			bugReportCorpus.setContentNorm(codeTfidf.calculateContentNorm(bugReportCorpus.getContentTokens()));
+			bugReportCorpus.setSummaryTokens(codeTfidf.vectorize(bugReportCorpus.getSummaryPart(), tokenScoreType));
+			bugReportCorpus.setSummaryNorm(codeTfidf.calculateContentNorm(bugReportCorpus.getSummaryTokens()));
+			bugReportCorpus.setDescriptionTokens(codeTfidf.vectorize(bugReportCorpus.getDescriptionPart(), tokenScoreType));
+			bugReportCorpus.setDescriptionNorm(codeTfidf.calculateContentNorm(bugReportCorpus.getDescriptionTokens()));
+		} else {
+			bugReportCorpus.setContentTokens(brTfidf.vectorize(bugReportCorpus.getContent(), tokenScoreType));
+			bugReportCorpus.setContentNorm(brTfidf.calculateContentNorm(bugReportCorpus.getContentTokens()));
+			bugReportCorpus.setSummaryTokens(brTfidf.vectorize(bugReportCorpus.getSummaryPart(), tokenScoreType));
+			bugReportCorpus.setSummaryNorm(brTfidf.calculateContentNorm(bugReportCorpus.getSummaryTokens()));
+			bugReportCorpus.setDescriptionTokens(brTfidf.vectorize(bugReportCorpus.getDescriptionPart(), tokenScoreType));
+			bugReportCorpus.setDescriptionNorm(brTfidf.calculateContentNorm(bugReportCorpus.getDescriptionTokens()));
 		}
-		int maxWordCount = 0;
-		double aveWordCount = 0.0;
-		if (tokenScoreType == ScoreType.NTFIDF) 
-			maxWordCount = Collections.max(tokensCount.values());
-		if (tokenScoreType == ScoreType.LOGTFIDF) {
-			double sumWordCount = 0.0;
-			for (Integer count : tokensCount.values())
-				sumWordCount += count;
-			aveWordCount = sumWordCount / tokensCount.size();
-		}
-		
-		for (Entry<String, Integer> tokenEntry : tokensCount.entrySet()) {
-			String token = tokenEntry.getKey();
-			double tf;
-			switch (tokenScoreType) {
-			case TFIDF:
-				tf = tfForWord(tokenEntry.getValue(), documentLength);
-				break;
-			case NTFIDF:
-				tf = ntfForWord(tokenEntry.getValue(), maxWordCount);
-				break;
-			case WFIDF:
-				tf = wfForWord(tokenEntry.getValue());
-				break;
-			case LOGTFIDF:
-				tf = logTfForWord(tokenEntry.getValue(), aveWordCount);
-				break;
-			default : // default type: ntf-idf
-				tf = ntfForWord(tokenEntry.getValue(), maxWordCount);
-				break;
-			}
-			double idf = idfForWord(token);
-			double tfidf = MathUtils.tfidf(tf, idf);
-			TokenScore tokenScore = new TokenScore(token, tf, idf, tfidf);
-			contentTokens.put(token, tokenScore);
-			contentNorm += tfidf * tfidf;
-		}
-		contentNorm = Math.sqrt(contentNorm);
-		bugReportCorpus.setContentNorm(contentNorm);
 	} 
 	
-    public double tfForWord(long wordCount, long documentLength) {
-        return (double) wordCount / (double) documentLength;
-    }
-    
-    public double ntfForWord(long wordCount, long maxWordCount) {
-    	return 0.5 + 0.5 * (double) wordCount / maxWordCount;
-    }
-    
-    public double wfForWord(long wordCount) {
-    	return 1 + Math.log(wordCount);
-    }
-    
-    public double logTfForWord(long wordCount, double aveWordCount) {
-    	return (1 + Math.log(wordCount)) / (1 + Math.log(aveWordCount));
-    }
-
-    public double idfForWord(String word) {
-    	if (usingCodeTfidf)
-    		return codeTfidf.idfForWord(word);
-    	else 
-    		return brTfidf.idfForWord(word);
-    }
-    
     
     /** BugReport Sentence Iterator help training tfidf model */
 	private class BugReportSentenceIterator implements SentenceIterator<Integer> {

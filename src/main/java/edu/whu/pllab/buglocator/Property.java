@@ -28,6 +28,7 @@ public class Property {
 	public final static String STOPWORDS_PATH = Property.readProperty("STOPWORDS_PATH");
 	public final static String SVM_RANK_LEARN_TOOL_PATH = Property.readProperty("SVM_RANK_LEARN_TOOL_PATH");
 	public final static String SVM_RANK_CLASSIFY_TOOL_PATH = Property.readProperty("SVM_RANK_CLASSIFY_TOOL_PATH");
+	public final static boolean USE_STRUCTURED_INFORMATION = Boolean.parseBoolean(Property.readProperty("USE_STRUCTURED_INFORMATION"));
 
 	private static Property p = null;
 	
@@ -161,11 +162,12 @@ public class Property {
 	 * print values of properties
 	 */
 	public void printValues() {
-		System.out.printf("Properties:");
+		System.out.printf("Properties:\n");
+		System.out.printf("USE_STRUCTURED_INFORMATION: %s\n", Property.USE_STRUCTURED_INFORMATION);
 		System.out.printf("THREAD_COUNT: %d\n", Property.THREAD_COUNT);
-		System.out.printf("StopwordsPath: %d\n", Property.STOPWORDS_PATH);
-		System.out.printf("SVMRankToolPath: %d\n", Property.SVM_RANK_LEARN_TOOL_PATH);
-		System.out.printf("SVMClassifyToolPath: %d\n", Property.SVM_RANK_CLASSIFY_TOOL_PATH);
+		System.out.printf("StopwordsPath: %s\n", Property.STOPWORDS_PATH);
+		System.out.printf("SVMRankToolPath: %s\n", Property.SVM_RANK_LEARN_TOOL_PATH);
+		System.out.printf("SVMClassifyToolPath: %s\n", Property.SVM_RANK_CLASSIFY_TOOL_PATH);
 		System.out.printf("Product: %s\n", getProduct());
 		System.out.printf("BugFilePath: %s\n", getBugFilePath());
 		System.out.printf("SourceCodeDir: %s\n", getSourceCodeDir());

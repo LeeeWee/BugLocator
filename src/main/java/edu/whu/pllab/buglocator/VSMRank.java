@@ -42,6 +42,7 @@ public class VSMRank {
 		
 		for (String product : products) {
 			Property property = Property.loadInstance(product);
+			property.printValues();
 			
 			/** record evaluate result */
 			BufferedWriter logWriter = new BufferedWriter(new FileWriter(property.getEvaluateLogPath()));

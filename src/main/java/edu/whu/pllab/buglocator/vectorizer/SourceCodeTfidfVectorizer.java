@@ -5,10 +5,10 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map.Entry;
 
-import org.deeplearning4j.util.MathUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import edu.whu.pllab.buglocator.Property;
 import edu.whu.pllab.buglocator.common.Method;
 import edu.whu.pllab.buglocator.common.SourceCode;
 import edu.whu.pllab.buglocator.common.SourceCodeCorpus;
@@ -19,14 +19,19 @@ public class SourceCodeTfidfVectorizer {
 	
 	private static final Logger logger = LoggerFactory.getLogger(BugReportTfidfVectorizer.class);
 	
+	/** whether use structured information */
+	private boolean useStructuredInformation;
+	
 	private TfidfVectorizer<String> tfidf;
 	private HashMap<String, SourceCode> sourceCodeMap;
 	private ScoreType tokenScoreType = ScoreType.NTFIDF;
 	
 	public SourceCodeTfidfVectorizer() {
+		useStructuredInformation = Property.USE_STRUCTURED_INFORMATION;
 	}
 	
 	public SourceCodeTfidfVectorizer(HashMap<String, SourceCode> sourceCodeMap) {
+		useStructuredInformation = Property.USE_STRUCTURED_INFORMATION;
 		this.sourceCodeMap = sourceCodeMap;
 	}
 	
@@ -57,154 +62,40 @@ public class SourceCodeTfidfVectorizer {
 			calculateTokensWeight(sourceCode);
 			for (Method method : sourceCode.getMethodList()) 
 				calculateTokensWeight(method);
+			
+			if (useStructuredInformation) {
+				SourceCodeCorpus sourceCodeCorpus = sourceCode.getSourceCodeCorpus();
+				calculateForStructuredInformation(sourceCodeCorpus);
+			}
 		}
 	}
 	
 	/** calculate tokens weight for source code */
 	public void calculateTokensWeight(SourceCode sourceCode) {
-		double contentNorm = 0.0;
-		int documentLength = 0;
 		SourceCodeCorpus sourceCodeCorpus = sourceCode.getSourceCodeCorpus();
-		String[] content = sourceCodeCorpus.getContent().split(" ");
-		HashMap<String, TokenScore> contentTokens = sourceCodeCorpus.getContentTokens();
-		HashMap<String, Integer> tokensCount = new HashMap<String, Integer>();
-		// get tokens term frequency
-		for (String token : content) {
-			if ((token = token.trim()).equals(""))
-				continue;
-			if (!tokensCount.containsKey(token))
-				tokensCount.put(token, 1);
-			else
-				tokensCount.put(token, tokensCount.get(token) + 1);
-			documentLength++;
-		}
-		int maxWordCount = 0;
-		double aveWordCount = 0.0;
-		if (tokenScoreType == ScoreType.NTFIDF) {
-			for (Integer count : tokensCount.values()) {
-				if (count > maxWordCount)
-					maxWordCount = count;
-			}
-		}
-		if (tokenScoreType == ScoreType.LOGTFIDF) {
-			double sumWordCount = 0.0;
-			for (Integer count : tokensCount.values())
-				sumWordCount += count;
-			aveWordCount = sumWordCount / tokensCount.size();
-		}
-		
-		for (Entry<String, Integer> tokenEntry : tokensCount.entrySet()) {
-			String token = tokenEntry.getKey();
-			double tf;
-			switch (tokenScoreType) {
-			case TFIDF:
-				tf = tfForWord(tokenEntry.getValue(), documentLength);
-				break;
-			case NTFIDF:
-				tf = ntfForWord(tokenEntry.getValue(), maxWordCount);
-				break;
-			case WFIDF:
-				tf = wfForWord(tokenEntry.getValue());
-				break;
-			case LOGTFIDF:
-				tf = logTfForWord(tokenEntry.getValue(), aveWordCount);
-				break;
-			default : // default type: ntf-idf
-				tf = ntfForWord(tokenEntry.getValue(), maxWordCount);
-				break;
-			}
-			double idf = idfForWord(token);
-			double tfidf = MathUtils.tfidf(tf, idf);
-			TokenScore tokenScore = new TokenScore(token, tf, idf, tfidf);
-			contentTokens.put(token, tokenScore);
-			contentNorm += tfidf * tfidf;
-		}
-		contentNorm = Math.sqrt(contentNorm);
-		sourceCodeCorpus.setContentNorm(contentNorm);
+		HashMap<String, TokenScore> contentTokens = tfidf.vectorize(sourceCodeCorpus.getContent(),
+				tokenScoreType);
+		sourceCodeCorpus.setContentTokens(contentTokens);
+		sourceCodeCorpus.setContentNorm(tfidf.calculateContentNorm(contentTokens));
 	}
 	
 	/** calculate tokens weight for method */
 	public void calculateTokensWeight(Method method) {
-		double contentNorm = 0.0;
-		int documentLength = 0;
-		String[] content = method.getContent().split(" ");
-		HashMap<String, TokenScore> contentTokens = method.getContentTokens();
-		HashMap<String, Integer> tokensCount = new HashMap<String, Integer>();
-		// get tokens term frequency
-		for (String token : content) {
-			if ((token = token.trim()).equals(""))
-				continue;
-			if (!tokensCount.containsKey(token))
-				tokensCount.put(token, 1);
-			else
-				tokensCount.put(token, tokensCount.get(token) + 1);
-			documentLength++;
-		}
-		int maxWordCount = 0;
-		double aveWordCount = 0.0;
-		if (tokenScoreType == ScoreType.NTFIDF) {
-			for (Integer count : tokensCount.values()) {
-				if (count > maxWordCount)
-					maxWordCount = count;
-			}
-		}
-		if (tokenScoreType == ScoreType.LOGTFIDF) {
-			double sumWordCount = 0.0;
-			for (Integer count : tokensCount.values())
-				sumWordCount += count;
-			aveWordCount = sumWordCount / tokensCount.size();
-		}
-		for (Entry<String, Integer> tokenEntry : tokensCount.entrySet()) {
-			String token = tokenEntry.getKey();
-			double tf;
-			switch (tokenScoreType) {
-			case TFIDF:
-				tf = tfForWord(tokenEntry.getValue(), documentLength);
-				break;
-			case NTFIDF:
-				tf = ntfForWord(tokenEntry.getValue(), maxWordCount);
-				break;
-			case WFIDF:
-				tf = wfForWord(tokenEntry.getValue());
-				break;
-			case LOGTFIDF:
-				tf = logTfForWord(tokenEntry.getValue(), aveWordCount);
-				break;
-			default : // default type: ntf-idf
-				tf = ntfForWord(tokenEntry.getValue(), maxWordCount);
-				break;
-			}
-			double idf = idfForWord(token);
-			double tfidf = MathUtils.tfidf(tf, idf);
-			TokenScore tokenScore = new TokenScore(token, tf, idf, tfidf);
-			contentTokens.put(token, tokenScore);
-			contentNorm += tfidf * tfidf;
-		}
-		contentNorm = Math.sqrt(contentNorm);
-		method.setContentNorm(contentNorm);
+		method.setContentTokens(tfidf.vectorize(method.getContent(), tokenScoreType));
+		method.setContentNorm(tfidf.calculateContentNorm(method.getContentTokens()));
 	}
-	
-	
-    public double tfForWord(long wordCount, long documentLength) {
-        return (double) wordCount / (double) documentLength;
-    }
     
-    public double ntfForWord(long wordCount, long maxWordCount) {
-    	return 0.5 + 0.5 * (double) wordCount / maxWordCount;
-    }
-    
-    public double wfForWord(long wordCount) {
-    	return 1 + Math.log10(wordCount);
-    }
-    
-    public double logTfForWord(long wordCount, double aveWordCount) {
-    	return (1 + Math.log10(wordCount)) / (1 + Math.log10(aveWordCount));
-    }
-
-    public double idfForWord(String word) {
-    	return tfidf.idfForWord(word);
-    }
-    
+	/** calculate structured information tokens weight and norm value */
+	public void calculateForStructuredInformation(SourceCodeCorpus sourceCodeCorpus) {
+		sourceCodeCorpus.setClassPartTokens(tfidf.vectorize(sourceCodeCorpus.getClassPart(), tokenScoreType));
+		sourceCodeCorpus.setMethodPartTokens(tfidf.vectorize(sourceCodeCorpus.getMethodPart(), tokenScoreType));
+		sourceCodeCorpus.setVariablePartTokens(tfidf.vectorize(sourceCodeCorpus.getVariablePart(), tokenScoreType));
+		sourceCodeCorpus.setCommentPartTokens(tfidf.vectorize(sourceCodeCorpus.getCommentPart(), tokenScoreType));
+		sourceCodeCorpus.setClassCorpusNorm(tfidf.calculateContentNorm(sourceCodeCorpus.getClassPartTokens()));
+		sourceCodeCorpus.setMethodCorpusNorm(tfidf.calculateContentNorm(sourceCodeCorpus.getMethodPartTokens()));
+		sourceCodeCorpus.setVariableCorpusNorm(tfidf.calculateContentNorm(sourceCodeCorpus.getVariablePartTokens()));
+		sourceCodeCorpus.setCommentCorpusNorm(tfidf.calculateContentNorm(sourceCodeCorpus.getCommentPartTokens()));
+	}
 	
 	/** Source Code Sentence Iterator help training tfidf model */
 	private class SourceCodeSentenceIterator implements SentenceIterator<String> {
@@ -241,7 +132,6 @@ public class SourceCodeTfidfVectorizer {
 			return sourceCodeMap.size();
 		}
 	}
-	
 
 	public ScoreType getTokenScoreType() {
 		return tokenScoreType;

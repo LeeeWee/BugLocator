@@ -56,6 +56,9 @@ public class SourceCodeRepository {
 	/** source code dir path */
 	private String sourceCodeDir;
 	
+	/** whether use structured information */
+	private boolean useStructuredInformation;
+	
 	/** git repository of sourceCode */
 	private Repository repo;
 	
@@ -78,6 +81,7 @@ public class SourceCodeRepository {
 	/** Constructor */
 	public SourceCodeRepository() {
 		Property property = Property.getInstance();
+		useStructuredInformation = Property.USE_STRUCTURED_INFORMATION;
 		sourceCodeDir = property.getSourceCodeDir();
 		
 		// initialize git repository
@@ -274,13 +278,37 @@ public class SourceCodeRepository {
 			// set methodList
 			List<Method> methodList = parser.getAllMethodList();
 			sourceCode.setMethodList(methodList);
+			
 			// set sourceCodeCorpus
-			SourceCodeCorpus sourceCodeCorpus = new SourceCodeCorpus(parser.getContent());
+			SourceCodeCorpus sourceCodeCorpus = new SourceCodeCorpus();
+			sourceCodeCorpus.setImportedClasses(parser.getImportedClasses());
+			// if useStructuredInformation, set classPart, methodPart, commentPart and
+			// variablePart for sourceCodeCorpus, else set content only
+			if (!useStructuredInformation) 
+				sourceCodeCorpus.setContent(parser.getContent());
+			else
+				setStructuredInformation(sourceCodeCorpus, parser);
+			
 			sourceCode.setSourceCodeCorpus(sourceCodeCorpus);
 			// put to map
 			synchronized(sourceCodeMap) {
 				sourceCodeMap.put(sourceCode.getPath(), sourceCode);
 			}
+		}
+		
+		/** set structured information for input sourceCOdeCorpus */
+		public void setStructuredInformation(SourceCodeCorpus sourceCodeCorpus, FileParser parser) {
+			String classPart = parser.getStructuredContentWithFullyIdentifier(FileParser.CLASS_PART) + 
+					parser.getStructuredContent(FileParser.CLASS_PART);
+			String methodPart = parser.getStructuredContentWithFullyIdentifier(FileParser.METHOD_PART) + 
+					parser.getStructuredContent(FileParser.METHOD_PART);
+			String variablePart = parser.getStructuredContent(FileParser.VARIABLE_PART);
+			String commentPart = parser.getStructuredContent(FileParser.COMMENT_PART);
+			sourceCodeCorpus.setClassPart(classPart);
+			sourceCodeCorpus.setMethodPart(methodPart);
+			sourceCodeCorpus.setVariablePart(variablePart);
+			sourceCodeCorpus.setCommentPart(commentPart);
+			sourceCodeCorpus.setContent(classPart + " " + methodPart + " " + variablePart + " " + commentPart);
 		}
 	}
 	

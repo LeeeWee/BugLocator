@@ -24,7 +24,7 @@ public class BugReportCorpus {
 	/** content tokens that contains tfidf and weight info */
 	private HashMap<String, TokenScore> contentTokens;
 	
-	private HashMap<String, TokenScore> summartTokens;
+	private HashMap<String, TokenScore> summaryTokens;
 	
 	private HashMap<String, TokenScore> descriptionTokens;
 	
@@ -36,7 +36,7 @@ public class BugReportCorpus {
 		this.summaryNorm = 0.0;
 		this.descriptionNorm = 0.0;
 		this.contentTokens = new HashMap<String, TokenScore>();
-		this.summartTokens = new HashMap<String, TokenScore>();
+		this.summaryTokens = new HashMap<String, TokenScore>();
 		this.descriptionTokens = new HashMap<String, TokenScore>();
 	}
 	
@@ -48,7 +48,7 @@ public class BugReportCorpus {
 		this.summaryNorm = 0.0;
 		this.descriptionNorm = 0.0;
 		this.contentTokens = new HashMap<String, TokenScore>();
-		this.summartTokens = new HashMap<String, TokenScore>();
+		this.summaryTokens = new HashMap<String, TokenScore>();
 		this.descriptionTokens = new HashMap<String, TokenScore>();
 	}
 
@@ -108,12 +108,12 @@ public class BugReportCorpus {
 		this.descriptionNorm = descriptionNorm;
 	}
 
-	public HashMap<String, TokenScore> getSummartTokens() {
-		return summartTokens;
+	public HashMap<String, TokenScore> getSummaryTokens() {
+		return summaryTokens;
 	}
 
-	public void setSummartTokens(HashMap<String, TokenScore> summartTokens) {
-		this.summartTokens = summartTokens;
+	public void setSummaryTokens(HashMap<String, TokenScore> summartTokens) {
+		this.summaryTokens = summartTokens;
 	}
 
 	public HashMap<String, TokenScore> getDescriptionTokens() {

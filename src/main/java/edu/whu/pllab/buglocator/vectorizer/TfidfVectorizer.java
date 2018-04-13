@@ -11,7 +11,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.deeplearning4j.util.MathUtils;
+
 import edu.whu.pllab.buglocator.Property;
+import edu.whu.pllab.buglocator.common.TokenScore;
+import edu.whu.pllab.buglocator.common.TokenScore.ScoreType;
 
 public class TfidfVectorizer<T> {
 
@@ -273,4 +277,95 @@ public class TfidfVectorizer<T> {
 		}
 	}
 	
+	/**
+	 * calculate tokens weight for each token in content 
+	 * @param content input content String
+	 * @param tokenScoreType given TokenScore Type, including NTFIDF, LOGTFIDF, WFIDF and TFIDF
+	 * @return tokensScore map
+	 */
+	public HashMap<String, TokenScore> vectorize(String content, ScoreType tokenScoreType) {
+		HashMap<String, TokenScore> contentTokens = new HashMap<String, TokenScore>();
+		String[] tokens = content.split(" ");
+		HashMap<String, Integer> tokensCount = new HashMap<String, Integer>();
+		int documentLength = 0;
+		// get tokens term frequency
+		for (String token : tokens) {
+			if ((token = token.trim()).equals(""))
+				continue;
+			if (!tokensCount.containsKey(token))
+				tokensCount.put(token, 1);
+			else
+				tokensCount.put(token, tokensCount.get(token) + 1);
+			documentLength++;
+		}
+		int maxWordCount = 0;
+		double aveWordCount = 0.0;
+		if (tokenScoreType == ScoreType.NTFIDF) {
+			for (Integer count : tokensCount.values()) {
+				if (count > maxWordCount)
+					maxWordCount = count;
+			}
+		}
+		if (tokenScoreType == ScoreType.LOGTFIDF) {
+			double sumWordCount = 0.0;
+			for (Integer count : tokensCount.values())
+				sumWordCount += count;
+			aveWordCount = sumWordCount / tokensCount.size();
+		}
+		
+		for (Entry<String, Integer> tokenEntry : tokensCount.entrySet()) {
+			String token = tokenEntry.getKey();
+			double tf;
+			switch (tokenScoreType) {
+			case TFIDF:
+				tf = tfForWord(tokenEntry.getValue(), documentLength);
+				break;
+			case NTFIDF:
+				tf = ntfForWord(tokenEntry.getValue(), maxWordCount);
+				break;
+			case WFIDF:
+				tf = wfForWord(tokenEntry.getValue());
+				break;
+			case LOGTFIDF:
+				tf = logTfForWord(tokenEntry.getValue(), aveWordCount);
+				break;
+			default : // default type: ntf-idf
+				tf = ntfForWord(tokenEntry.getValue(), maxWordCount);
+				break;
+			}
+			double idf = idfForWord(token);
+			double tfidf = MathUtils.tfidf(tf, idf);
+			TokenScore tokenScore = new TokenScore(token, tf, idf, tfidf);
+			contentTokens.put(token, tokenScore);
+		}
+		return contentTokens;
+	}
+	
+	/** calculate tokens content norm for contentTokens map */
+	public double calculateContentNorm(HashMap<String, TokenScore> contentTokens) {
+		double contentNorm = 0.0;
+		for (TokenScore token : contentTokens.values()) {
+			contentNorm += token.getTokenWeight();
+		}
+		return Math.sqrt(contentNorm);
+	}
+	
+
+	
+    public double tfForWord(long wordCount, long documentLength) {
+        return (double) wordCount / (double) documentLength;
+    }
+    
+    public double ntfForWord(long wordCount, long maxWordCount) {
+    	return 0.5 + 0.5 * (double) wordCount / maxWordCount;
+    }
+    
+    public double wfForWord(long wordCount) {
+    	return 1 + Math.log10(wordCount);
+    }
+    
+    public double logTfForWord(long wordCount, double aveWordCount) {
+    	return (1 + Math.log10(wordCount)) / (1 + Math.log10(aveWordCount));
+    }
+
 }

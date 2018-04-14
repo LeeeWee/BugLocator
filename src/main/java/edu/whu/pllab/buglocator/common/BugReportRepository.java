@@ -16,6 +16,10 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+
 import java.util.TreeSet;
 
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
@@ -26,6 +30,10 @@ import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 import edu.whu.pllab.buglocator.Property;
 import edu.whu.pllab.buglocator.utils.Splitter;
@@ -41,8 +49,11 @@ public class BugReportRepository {
 	
 	public BugReportRepository() {
 		Property property = Property.getInstance();
-		String brExcelPath = property.getBugFilePath();
-		bugReports = parseExcel(new File(brExcelPath));
+		String brFilePath = property.getBugFilePath();
+		if (brFilePath.equals(".xml"))
+			bugReports = parseExcel(new File(brFilePath));
+		else 
+			bugReports = parseXML(new File(brFilePath));
 		cleanText();
 		saveSourceCodeChangeHistory(extractSourceCodeChangeHistory(),property.getCodeChangeHistoryPath());
 	}
@@ -98,7 +109,73 @@ public class BugReportRepository {
 			e.printStackTrace();
 		}
 		return bugReports;
-	} 
+	}
+	
+	private HashMap<Integer, BugReport> parseXML(File xmlFile) {
+		logger.info("Loading bug reports data by parsing xml...");
+		HashMap<Integer, BugReport> bugReports = new HashMap<Integer, BugReport>();
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+		DocumentBuilderFactory domFactory = DocumentBuilderFactory
+				.newInstance();
+		try {
+			DocumentBuilder domBuilder = domFactory.newDocumentBuilder();
+			InputStream is = new FileInputStream(xmlFile);
+			Document doc = domBuilder.parse(is);
+			Element root = doc.getDocumentElement();
+			NodeList bugRepository = root.getChildNodes();
+			if (bugRepository != null) {
+				for (int i = 0; i < bugRepository.getLength(); i++) {
+					Node bugNode = bugRepository.item(i);
+					if (bugNode.getNodeType() == Node.ELEMENT_NODE) {
+						String bugID = bugNode.getAttributes()
+								.getNamedItem("id").getNodeValue();
+						String openDate = bugNode.getAttributes()
+								.getNamedItem("opendate").getNodeValue();
+						String fixDate = bugNode.getAttributes()
+								.getNamedItem("fixdate").getNodeValue();
+						BugReport bugReport = new BugReport();
+						bugReport.setBugID(Integer.parseInt(bugID));
+						bugReport.setReportTime(sdf.parse(openDate));
+						bugReport.setCommitTime(sdf.parse(fixDate));
+						for (Node node = bugNode.getFirstChild(); node != null; node = node
+								.getNextSibling()) {
+							if (node.getNodeType() == Node.ELEMENT_NODE) {
+								if (node.getNodeName().equals("buginformation")) {
+									NodeList _l = node.getChildNodes();
+									for (int j = 0; j < _l.getLength(); j++) {
+										Node _n = _l.item(j);
+										if (_n.getNodeName().equals("summary")) {
+											String summary = _n.getTextContent();
+											bugReport.setSummary(summary);
+										}
+										if (_n.getNodeName().equals("description")) {
+											String description = _n.getTextContent();
+											bugReport.setDescription(description);
+										}
+									}
+
+								}
+								if (node.getNodeName().equals("fixedFiles")) {
+									NodeList _l = node.getChildNodes();
+									for (int j = 0; j < _l.getLength(); j++) {
+										Node _n = _l.item(j);
+										if (_n.getNodeName().equals("file")) {
+											String fileName = _n.getTextContent();
+											bugReport.getFixedFiles().add(fileName);
+										}
+									}
+								}
+							}
+						}
+						bugReports.put(bugReport.getBugID(), bugReport);
+					}
+				}
+			}
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+		return bugReports;
+	}
 	
 	/** convert excel cell value to string */
 	private String cellValue2String(Cell cell) {
@@ -162,13 +239,14 @@ public class BugReportRepository {
 	
 	 /** split, stem and remove stopwords for given text */
 	public String cleanText(String text) {
-		String[] content = Splitter.splitNatureLanguageEx(text);
+//		String[] content = Splitter.splitNatureLanguageEx(text);
+		String[] content = Splitter.splitNatureLanguage(text);
 		StringBuffer contentBuf = new StringBuffer();
 		for (int i = 0; i < content.length; i++) {
 			String word = content[i].toLowerCase();
 			if (word.length() > 0) {
 				String stemWord = Stemmer.stem(word);
-				if (!Stopword.isEnglishStopword(stemWord) && !Stopword.isProjectKeyword(stemWord)) {
+				if (!Stopword.isEnglishStopword(stemWord)) {
 					contentBuf.append(stemWord);
 					contentBuf.append(" ");
 				}

@@ -199,7 +199,7 @@ public class TfidfVectorizer<T> {
 	public void calculateInverseDocFrequencyTable() {
 		inverseDocFrequencyTable = new Hashtable<String, Double>();
 		for (String word : wordCounts.keySet()) {
-			double idf = Math.log10(totalNumberOfDocs() / docAppearedIn(word));
+			double idf = Math.log(totalNumberOfDocs() / docAppearedIn(word));
 			inverseDocFrequencyTable.put(word, idf);
 		}
 	}
@@ -361,11 +361,11 @@ public class TfidfVectorizer<T> {
     }
     
     public double wfForWord(long wordCount) {
-    	return 1 + Math.log10(wordCount);
+    	return 1 + Math.log(wordCount);
     }
     
     public double logTfForWord(long wordCount, double aveWordCount) {
-    	return (1 + Math.log10(wordCount)) / (1 + Math.log10(aveWordCount));
+    	return (1 + Math.log(wordCount)) / (1 + Math.log(aveWordCount));
     }
 
 }

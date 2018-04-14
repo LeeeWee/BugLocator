@@ -40,6 +40,7 @@ import org.w3c.dom.NodeList;
 import edu.whu.pllab.buglocator.Property;
 import edu.whu.pllab.buglocator.astparser.FileParser;
 import edu.whu.pllab.buglocator.utils.FileUtil;
+import edu.whu.pllab.buglocator.utils.Stemmer;
 
 public class SourceCodeRepository {
 
@@ -88,7 +89,8 @@ public class SourceCodeRepository {
 		try {
 			repo = FileRepositoryBuilder.create(new File(sourceCodeDir, ".git"));
 			git = new Git(repo);
-			this.version = repo.findRef("HEAD").getObjectId().getName();
+			if (repo.findRef("HEAD") != null)
+				this.version = repo.findRef("HEAD").getObjectId().getName();
 			logger.info("Current commit version id: " + this.version);
 		} catch (IOException e) {
 		}
@@ -103,7 +105,7 @@ public class SourceCodeRepository {
 			sourceCodeMap = parseXMLOfSourceCodeRepo(property.getCodeRepositoryXMLPath());
 		else {
 			loadSourceCodeFiles(sourceCodeDir);
-			saveSourceCodeRepoToXML(property.getCodeRepositoryXMLPath(), property.getProduct());
+//			saveSourceCodeRepoToXML(property.getCodeRepositoryXMLPath(), property.getProduct());
 		}
 		loadSourceCodeChangeHistory(property.getCodeChangeHistoryPath());
 		computeLengthScore();
@@ -238,7 +240,7 @@ public class SourceCodeRepository {
 	public void loadSourceCodeFiles(String sourceCodeDir) {
 		// get all java files under sourceCode directory
 		List<String> javaFiles = FileUtil.getAllFiles(sourceCodeDir, ".java");
-		logger.info("Parsing java files...");
+		logger.info("Begining parsing source code, total " + javaFiles.size() + " java files.");
 		// parse java files with multi thread
 		ExecutorService executor = Executors.newFixedThreadPool(Property.THREAD_COUNT);
 		for (String javaFilePath : javaFiles) {
@@ -248,7 +250,7 @@ public class SourceCodeRepository {
 		executor.shutdown();
 		while (!executor.isTerminated()) {
 		}
-		logger.info("Finished parsing, total " + javaFiles.size() + " java files.");
+		logger.info("Finished parsing!");
 	}
 	
 	/** worker parsing source code file */
@@ -284,8 +286,19 @@ public class SourceCodeRepository {
 			sourceCodeCorpus.setImportedClasses(parser.getImportedClasses());
 			// if useStructuredInformation, set classPart, methodPart, commentPart and
 			// variablePart for sourceCodeCorpus, else set content only
-			if (!useStructuredInformation) 
-				sourceCodeCorpus.setContent(parser.getContent());
+			if (!useStructuredInformation) {
+				String content = parser.getContent();
+				// append class and method names
+				String classNameAndMethodName = parser.getClassNameAndMethodName();
+				StringBuffer nameBuf = new StringBuffer();
+			    for (String word : classNameAndMethodName.split(" ")) {
+				    String stemWord = Stemmer.stem(word.toLowerCase());
+				    nameBuf.append(stemWord);
+				    nameBuf.append(" ");
+			    }
+			    String names = nameBuf.toString();
+				sourceCodeCorpus.setContent(content + " " + names.trim());
+			}
 			else
 				setStructuredInformation(sourceCodeCorpus, parser);
 			
@@ -298,10 +311,12 @@ public class SourceCodeRepository {
 		
 		/** set structured information for input sourceCOdeCorpus */
 		public void setStructuredInformation(SourceCodeCorpus sourceCodeCorpus, FileParser parser) {
-			String classPart = parser.getStructuredContentWithFullyIdentifier(FileParser.CLASS_PART) + 
+			String classPart = parser.getStructuredContentWithFullyIdentifier(FileParser.CLASS_PART) + " " +
 					parser.getStructuredContent(FileParser.CLASS_PART);
-			String methodPart = parser.getStructuredContentWithFullyIdentifier(FileParser.METHOD_PART) + 
+			classPart = Stemmer.stemContent(classPart);
+			String methodPart = parser.getStructuredContentWithFullyIdentifier(FileParser.METHOD_PART) + " " +
 					parser.getStructuredContent(FileParser.METHOD_PART);
+			methodPart = Stemmer.stemContent(methodPart);
 			String variablePart = parser.getStructuredContent(FileParser.VARIABLE_PART);
 			String commentPart = parser.getStructuredContent(FileParser.COMMENT_PART);
 			sourceCodeCorpus.setClassPart(classPart);
@@ -436,9 +451,27 @@ public class SourceCodeRepository {
 				classNameElement.appendChild(doc.createTextNode(code.getFullClassName()));
 				codeElement.appendChild(classNameElement);
 				
-				Element contentElement = doc.createElement("Content");
-				contentElement.appendChild(doc.createTextNode(code.getSourceCodeCorpus().getContent()));
-				codeElement.appendChild(contentElement);
+				Element contentFieldElement = doc.createElement("Content");
+				contentFieldElement.appendChild(doc.createTextNode(code.getSourceCodeCorpus().getContent()));
+				codeElement.appendChild(contentFieldElement);
+				
+				if (Property.USE_STRUCTURED_INFORMATION) {
+					Element classFieldElement = doc.createElement("ClassPart");
+					classFieldElement.appendChild(doc.createTextNode(code.getSourceCodeCorpus().getClassPart()));
+					codeElement.appendChild(classFieldElement);
+					
+					Element variableFieldElement = doc.createElement("VariablePart");
+					variableFieldElement.appendChild(doc.createTextNode(code.getSourceCodeCorpus().getVariablePart()));
+					codeElement.appendChild(variableFieldElement);
+					
+					Element methodFieldElement = doc.createElement("MethodPart");
+					methodFieldElement.appendChild(doc.createTextNode(code.getSourceCodeCorpus().getMethodPart()));
+					codeElement.appendChild(methodFieldElement);
+					
+					Element commentElement = doc.createElement("commentPart");
+					commentElement.appendChild(doc.createTextNode(code.getSourceCodeCorpus().getCommentPart()));
+					codeElement.appendChild(commentElement);
+				}
 				
 				Element methodsElement = doc.createElement("Methods");
 				codeElement.appendChild(methodsElement);
@@ -504,6 +537,14 @@ public class SourceCodeRepository {
 								sourceCode.setFullClassName(childNode.getTextContent());
 							else if (childNode.getNodeName().equals("Content"))
 								sourceCode.setSourceCodeCorpus(new SourceCodeCorpus(childNode.getTextContent()));
+							else if (childNode.getNodeName().equals("ClassPart"))
+								sourceCode.getSourceCodeCorpus().setClassPart(childNode.getTextContent());
+							else if (childNode.getNodeName().equals("VariablePart"))
+								sourceCode.getSourceCodeCorpus().setVariablePart(childNode.getTextContent());
+							else if (childNode.getNodeName().equals("MethodPart"))
+								sourceCode.getSourceCodeCorpus().setMethodPart(childNode.getTextContent());
+							else if (childNode.getNodeName().equals("CommentPart"))
+								sourceCode.getSourceCodeCorpus().setCommentPart(childNode.getTextContent());
 							else if (childNode.getNodeName().equals("Methods")) {
 								NodeList methodNodeList = childNode.getChildNodes();
 								for (int j = 0; j < methodNodeList.getLength(); j++) {

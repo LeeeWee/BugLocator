@@ -136,6 +136,13 @@ public class FileParser {
     	
     	return importedClasses;
     }
+    
+    /** get allClassNames + " " + allMethodNames */
+    public String getClassNameAndMethodName() {
+		String content = (this.getAllClassNames() + " " + this
+				.getAllMethodNames()).toLowerCase();
+		return content;
+	}
 	
     /**
      * get all class names

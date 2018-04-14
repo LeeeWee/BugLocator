@@ -44,13 +44,16 @@ public class Stopword {
     	// References
     	// http://docs.oracle.com/javase/tutorial/java/nutsandbolts/_keywords.html
     	// http://en.wikipedia.org/wiki/List_of_Java_keywords#Reserved_words_for_literal_values
-        String javaKeywords[] = {
-                "abstract", "continue", "for", "new", "switch", "assert", "default", "goto", "package", "synchronized", 
-                "boolean", "do", "if", "private", "this", "break", "double", "implements", "protected", "throw", 
-                "byte", "else", "import", "public", "throws", "case", "enum", "instanceof", "return", "transient", 
-                "catch", "extends", "int", "short", "try", "char", "final", "interface", "static", "void", 
-                "class", "finally", "long", "strictfp", "volatile", "const", "float", "native", "super", "while", 
-                "false", "true", "null" };
+        String javaKeywords[] = { "abstract", "continue", "for",
+				"new", "switch", "assert", "default", "goto", "package",
+				"synchronized", "boolean", "do", "if", "private", "this",
+				"break", "double", "implements", "protected", "throw", "byte",
+				"else", "import", "public", "throws", "case", "enum",
+				"instanceof", "return", "transient", "catch", "extends", "int",
+				"short", "try", "char", "final", "interface", "static", "void",
+				"class", "finally", "long", "strictfp", "volatile", "const",
+				"float", "native", "super", "while", "string", "main", "args", 
+				"null", "this", "extends", "true", "false" };
         
         JAVA_KEYWORDS_STOP_WORD_SET = new TreeSet<String>();
         for(int i = 0; i < javaKeywords.length; i++)
@@ -61,8 +64,7 @@ public class Stopword {
         }
         
         String projectKeywords[] = {
-                "args", "method", "main", "param",
-                "aspectj", "swt", "eclipse", "birt", "platform", "tomcat", "jdt", "string", "java", "org", "javadoc"
+                "org", "eclipse", "swt"
                 };
         
         PROJECT_KEYWORDS_STOP_WORD_SET = new TreeSet<String>();

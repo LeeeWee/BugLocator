@@ -5,6 +5,7 @@ import java.io.FileWriter;
 import java.util.Map.Entry;
 
 import edu.whu.pllab.buglocator.Property;
+import edu.whu.pllab.buglocator.common.BugReportRepository;
 import edu.whu.pllab.buglocator.common.Method;
 import edu.whu.pllab.buglocator.common.SourceCode;
 import edu.whu.pllab.buglocator.common.SourceCodeRepository;
@@ -12,21 +13,43 @@ import edu.whu.pllab.buglocator.common.TokenScore;
 import edu.whu.pllab.buglocator.vectorizer.SourceCodeTfidfVectorizer;
 
 public class SourceCodeReositoryTest {
-
+	
 	public static void main(String[] args) throws Exception {
-		String output = "D:\\data\\working\\jdt\\sourceCodeRepositoryTest.txt";
+		String output = "D:\\data\\working\\test\\sourceCodeRepositoryTest.txt";
 //		String output = "/Users/liwei/Documents/defect-prediction/working/SourceCodeTest.txt";
 		
-		@SuppressWarnings("unused")
-		Property property = Property.loadInstance();
-		SourceCodeRepository repo = new SourceCodeRepository();
-		SourceCodeTfidfVectorizer vectorizer = new SourceCodeTfidfVectorizer(repo.getSourceCodeMap());
-		vectorizer.train();
-		vectorizer.calculateTokensWeight(repo.getSourceCodeMap());
+		String[] products = {"swt", "aspectj", "eclipse"};
+		String[] bugFilePaths = {"D:\\data\\buglocalization\\BRTracer\\Dataset\\SWTBugRepository.xml",
+								"D:\\data\\buglocalization\\BRTracer\\Dataset\\AspectJBugRepository.xml",
+								"D:\\data\\buglocalization\\BRTracer\\Dataset\\EclipseBugRepository.xml"};
+		String[] sourceCodeDirs = {"D:\\data\\buglocalization\\BRTracer\\Dataset\\swt-3.1\\src",
+									"D:\\data\\buglocalization\\BRTracer\\Dataset\\aspectj",
+									"D:\\data\\buglocalization\\BRTracer\\Dataset\\eclipse-3.1\\plugins"};
+		
+//		for (int index = 0; index < products.length; index++) {
+		int index = 0;
+			Property property = Property.loadInstance("test_" + products[index]);
+
+			
+			property.setProduct(products[index]);
+			property.setBugFilePath(bugFilePaths[index]);
+			property.setSourceCodeDir(sourceCodeDirs[index]);
+
+			// initialize bugReport Repository
+			BugReportRepository brRepo = new BugReportRepository();
+			
+			SourceCodeRepository codeRepo = new SourceCodeRepository();
+			if (property.getProduct().equals("swt") || property.getProduct().equals("eclipse"))
+				VSMRankTestOnBRTracerData.modifyFilesPath(brRepo, codeRepo);
+			
+			SourceCodeTfidfVectorizer codeTfidfVectorizer = new SourceCodeTfidfVectorizer(codeRepo.getSourceCodeMap());
+			codeTfidfVectorizer.train();
+			codeTfidfVectorizer.calculateTokensWeight(codeRepo.getSourceCodeMap());
+//		}
 		
 		BufferedWriter writer = new BufferedWriter(new FileWriter(output));
 //		int count = 0;
-		for (Entry<String, SourceCode> entry : repo.getSourceCodeMap().entrySet()) {
+		for (Entry<String, SourceCode> entry : codeRepo.getSourceCodeMap().entrySet()) {
 //			count++;
 //			if (count == 100) 
 //				break;

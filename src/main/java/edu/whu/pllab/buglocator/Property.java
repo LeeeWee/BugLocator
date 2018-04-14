@@ -109,7 +109,9 @@ public class Property {
 		String codeRepositoryXMLPath = new File(workingDir, CODE_REPO_XML_PATH).getAbsolutePath();
 		String featuresExtremumPath = new File(workingDir, FEATURES_EXTREMUM_PATH).getAbsolutePath();
 		String evaluateLogPath = new File(workingDir, EVALUATE_LOG_PATH).getAbsolutePath();
-		int splitNum = Integer.parseInt(Property.readProperty(targetProduct + "_" + "SPLIT_NUM"));
+		int splitNum = 10;
+		if (Property.readProperty(targetProduct + "_" + "SPLIT_NUM") != null)
+			splitNum = Integer.parseInt(Property.readProperty(targetProduct + "_" + "SPLIT_NUM"));
 		File workingDirFile = new File(workingDir);
 		if (!workingDirFile.exists()) {
 			workingDirFile.mkdirs();

@@ -3,6 +3,7 @@ package edu.whu.pllab.buglocator.tests;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.util.Map.Entry;
+import java.util.TreeMap;
 
 import edu.whu.pllab.buglocator.Property;
 import edu.whu.pllab.buglocator.common.BugReport;
@@ -16,15 +17,32 @@ public class BugReportRepositoryTest {
 	
 	
 	public static void main(String[] args) throws Exception {
-		String output = "D:\\data\\working\\jdt\\BugReportRepositoryTest.txt";
+		String output = "D:\\data\\working\\test\\BugReportRepositoryTest.txt";
 //		String output = "/Users/liwei/Documents/defect-prediction/working/BugReportTest.txt";
 		
-		@SuppressWarnings("unused")
-		Property property = Property.loadInstance();
-		brRepo = new BugReportRepository();
-		BugReportTfidfVectorizer vectorizer = new BugReportTfidfVectorizer(brRepo.getBugReports());
-		vectorizer.train();
-		vectorizer.calculateTokensWeight(brRepo.getBugReports());
+		String[] products = {"swt", "aspectj", "eclipse"};
+		String[] bugFilePaths = {"D:\\data\\buglocalization\\BRTracer\\Dataset\\SWTBugRepository.xml",
+								"D:\\data\\buglocalization\\BRTracer\\Dataset\\AspectJBugRepository.xml",
+								"D:\\data\\buglocalization\\BRTracer\\Dataset\\EclipseBugRepository.xml"};
+		String[] sourceCodeDirs = {"D:\\data\\buglocalization\\BRTracer\\Dataset\\swt-3.1\\src",
+									"D:\\data\\buglocalization\\BRTracer\\Dataset\\aspectj",
+									"D:\\data\\buglocalization\\BRTracer\\Dataset\\eclipse-3.1\\plugins"};
+		
+//		for (int index = 0; index < products.length; index++) {
+		int index = 0;
+			Property property = Property.loadInstance("test_" + products[index]);
+			
+			property.setProduct(products[index]);
+			property.setBugFilePath(bugFilePaths[index]);
+			property.setSourceCodeDir(sourceCodeDirs[index]);
+			
+			// initialize bugReport Repository
+			brRepo = new BugReportRepository();
+			
+			BugReportTfidfVectorizer vectorizer = new BugReportTfidfVectorizer(brRepo.getBugReports());
+			vectorizer.train();
+			vectorizer.calculateTokensWeight(brRepo.getBugReports());
+//		}
 		
 		writeBugRepository(output);
 		
@@ -32,7 +50,8 @@ public class BugReportRepositoryTest {
 	
 	public static void writeBugRepository(String output) throws Exception {
 		BufferedWriter writer = new BufferedWriter(new FileWriter(output));
-		for (Entry<Integer, BugReport> entry : brRepo.getBugReports().entrySet()) {
+		TreeMap<Integer, BugReport> sortedMap = new TreeMap<Integer, BugReport>(brRepo.getBugReports());
+		for (Entry<Integer, BugReport> entry : sortedMap.entrySet()) {
 			StringBuilder builder = new StringBuilder();
 			BugReport bugReport = entry.getValue();
 			builder.append("BugID: " + bugReport.getBugID() + "\n");

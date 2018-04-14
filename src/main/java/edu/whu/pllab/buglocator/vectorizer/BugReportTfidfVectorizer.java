@@ -25,7 +25,7 @@ public class BugReportTfidfVectorizer {
 	private TfidfVectorizer<String> codeTfidf;
 	private TfidfVectorizer<Integer> brTfidf;
 	private HashMap<Integer, BugReport> bugReportsMap;
-	private ScoreType tokenScoreType = ScoreType.NTFIDF;
+	private ScoreType tokenScoreType = ScoreType.WFIDF;
 	
 	public BugReportTfidfVectorizer() {
 	}
@@ -59,21 +59,13 @@ public class BugReportTfidfVectorizer {
 	/** calculate tokens tf, idf and tokensWeight for single bug report, and set content Norm value */
 	public void calculateTokensWeight(BugReport bugReport) {
 		BugReportCorpus bugReportCorpus = bugReport.getBugReportCorpus();
-		if (usingCodeTfidf) {
-			bugReportCorpus.setContentTokens(codeTfidf.vectorize(bugReportCorpus.getContent(), tokenScoreType));
-			bugReportCorpus.setContentNorm(codeTfidf.calculateContentNorm(bugReportCorpus.getContentTokens()));
-			bugReportCorpus.setSummaryTokens(codeTfidf.vectorize(bugReportCorpus.getSummaryPart(), tokenScoreType));
-			bugReportCorpus.setSummaryNorm(codeTfidf.calculateContentNorm(bugReportCorpus.getSummaryTokens()));
-			bugReportCorpus.setDescriptionTokens(codeTfidf.vectorize(bugReportCorpus.getDescriptionPart(), tokenScoreType));
-			bugReportCorpus.setDescriptionNorm(codeTfidf.calculateContentNorm(bugReportCorpus.getDescriptionTokens()));
-		} else {
-			bugReportCorpus.setContentTokens(brTfidf.vectorize(bugReportCorpus.getContent(), tokenScoreType));
-			bugReportCorpus.setContentNorm(brTfidf.calculateContentNorm(bugReportCorpus.getContentTokens()));
-			bugReportCorpus.setSummaryTokens(brTfidf.vectorize(bugReportCorpus.getSummaryPart(), tokenScoreType));
-			bugReportCorpus.setSummaryNorm(brTfidf.calculateContentNorm(bugReportCorpus.getSummaryTokens()));
-			bugReportCorpus.setDescriptionTokens(brTfidf.vectorize(bugReportCorpus.getDescriptionPart(), tokenScoreType));
-			bugReportCorpus.setDescriptionNorm(brTfidf.calculateContentNorm(bugReportCorpus.getDescriptionTokens()));
-		}
+		TfidfVectorizer<?> tfidf = usingCodeTfidf ? codeTfidf : brTfidf;
+		bugReportCorpus.setContentTokens(tfidf.vectorize(bugReportCorpus.getContent(), tokenScoreType));
+		bugReportCorpus.setContentNorm(tfidf.calculateContentNorm(bugReportCorpus.getContentTokens()));
+		bugReportCorpus.setSummaryTokens(tfidf.vectorize(bugReportCorpus.getSummaryPart(), tokenScoreType));
+		bugReportCorpus.setSummaryNorm(tfidf.calculateContentNorm(bugReportCorpus.getSummaryTokens()));
+		bugReportCorpus.setDescriptionTokens(tfidf.vectorize(bugReportCorpus.getDescriptionPart(), tokenScoreType));
+		bugReportCorpus.setDescriptionNorm(tfidf.calculateContentNorm(bugReportCorpus.getDescriptionTokens()));
 	} 
 	
     

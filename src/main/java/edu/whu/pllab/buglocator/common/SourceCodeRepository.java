@@ -133,7 +133,7 @@ public class SourceCodeRepository {
 		sourceCodeDirNameLength = new File(sourceCodeDir).getAbsolutePath().length();
 		sourceCodeMap = new HashMap<String, SourceCode>();
 		loadSourceCodeFiles(sourceCodeDir);
-		saveSourceCodeRepoToXML(property.getCodeRepositoryXMLPath(), property.getProduct());
+//		saveSourceCodeRepoToXML(property.getCodeRepositoryXMLPath(), property.getProduct());
 		loadSourceCodeChangeHistory(property.getCodeChangeHistoryPath());
 		computeLengthScore();
 	}

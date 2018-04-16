@@ -19,6 +19,11 @@ import java.util.concurrent.Executors;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 
 import java.util.TreeSet;
 
@@ -50,10 +55,10 @@ public class BugReportRepository {
 	public BugReportRepository() {
 		Property property = Property.getInstance();
 		String brFilePath = property.getBugFilePath();
-		if (brFilePath.equals(".xml"))
-			bugReports = parseExcel(new File(brFilePath));
-		else 
+		if (brFilePath.endsWith(".xml"))
 			bugReports = parseXML(new File(brFilePath));
+		else 
+			bugReports = parseExcel(new File(brFilePath));
 		cleanText();
 		saveSourceCodeChangeHistory(extractSourceCodeChangeHistory(),property.getCodeChangeHistoryPath());
 	}
@@ -111,6 +116,7 @@ public class BugReportRepository {
 		return bugReports;
 	}
 	
+	/**  load bug reports data from xml file */
 	private HashMap<Integer, BugReport> parseXML(File xmlFile) {
 		logger.info("Loading bug reports data by parsing xml...");
 		HashMap<Integer, BugReport> bugReports = new HashMap<Integer, BugReport>();
@@ -129,31 +135,30 @@ public class BugReportRepository {
 					if (bugNode.getNodeType() == Node.ELEMENT_NODE) {
 						String bugID = bugNode.getAttributes()
 								.getNamedItem("id").getNodeValue();
-						String openDate = bugNode.getAttributes()
-								.getNamedItem("opendate").getNodeValue();
-						String fixDate = bugNode.getAttributes()
-								.getNamedItem("fixdate").getNodeValue();
+						String reportTime = bugNode.getAttributes()
+								.getNamedItem("reportTime").getNodeValue();
 						BugReport bugReport = new BugReport();
 						bugReport.setBugID(Integer.parseInt(bugID));
-						bugReport.setReportTime(sdf.parse(openDate));
-						bugReport.setCommitTime(sdf.parse(fixDate));
+						bugReport.setReportTime(sdf.parse(reportTime));
 						for (Node node = bugNode.getFirstChild(); node != null; node = node
 								.getNextSibling()) {
 							if (node.getNodeType() == Node.ELEMENT_NODE) {
-								if (node.getNodeName().equals("buginformation")) {
-									NodeList _l = node.getChildNodes();
-									for (int j = 0; j < _l.getLength(); j++) {
-										Node _n = _l.item(j);
-										if (_n.getNodeName().equals("summary")) {
-											String summary = _n.getTextContent();
-											bugReport.setSummary(summary);
-										}
-										if (_n.getNodeName().equals("description")) {
-											String description = _n.getTextContent();
-											bugReport.setDescription(description);
-										}
+								if (node.getNodeName().equals("summary")) {
+									String summary = node.getTextContent();
+									bugReport.setSummary(summary);
+								}
+								if (node.getNodeName().equals("description")) {
+									String description = node.getTextContent();
+									bugReport.setDescription(description);
+								}
+								if (node.getNodeName().equals("commit")) {
+									if (node.getAttributes().getNamedItem("id") != null) {
+										String commitID = node.getAttributes().getNamedItem("id").getNodeValue();
+										bugReport.setCommitID(commitID);
 									}
-
+									String commitTime = node.getAttributes()
+											.getNamedItem("commitTime").getNodeValue();
+									bugReport.setCommitTime(sdf.parse(commitTime));
 								}
 								if (node.getNodeName().equals("fixedFiles")) {
 									NodeList _l = node.getChildNodes();
@@ -175,6 +180,67 @@ public class BugReportRepository {
 			ex.printStackTrace();
 		}
 		return bugReports;
+	}
+	
+	public void saveBugReportRepoToXML(String output) {
+		String product = Property.getInstance().getProduct();
+		List<BugReport> bugReportsList = getSortedBugReports();
+		saveBugReportRepoToXML(bugReportsList, output, product);
+	}
+	
+	/** save bug report repository as xml to output path  */
+	public static void saveBugReportRepoToXML(List<BugReport> bugReportsList, String output, String product) {
+		logger.info("Saving bug report repository as xml to " + output + "...");
+		DocumentBuilderFactory domFactory = DocumentBuilderFactory.newInstance();
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+		try {
+			DocumentBuilder domBuilder = domFactory.newDocumentBuilder();
+			Document doc = domBuilder.newDocument();
+			
+			Element root = doc.createElement("BugReportRepository");
+			root.setAttribute("product", product);
+			doc.appendChild(root);
+			for (BugReport bugReport : bugReportsList) {
+				Element bugElement = doc.createElement("bug");
+				bugElement.setAttribute("id", String.valueOf(bugReport.getBugID()));
+				bugElement.setAttribute("reportTime", sdf.format(bugReport.getReportTime()));
+				
+				Element summaryElement = doc.createElement("summary");
+				summaryElement.appendChild(doc.createTextNode(bugReport.getSummary()));
+				bugElement.appendChild(summaryElement);
+				
+				Element descriptionElement = doc.createElement("description");
+				summaryElement.appendChild(doc.createTextNode(bugReport.getDescription()));
+				bugElement.appendChild(descriptionElement);
+				
+				Element commitElement = doc.createElement("commit");
+				if (!bugReport.getCommitID().isEmpty())
+					commitElement.setAttribute("id", bugReport.getCommitID());
+				commitElement.setAttribute("commitTime", sdf.format(bugReport.getCommitTime()));
+				bugElement.appendChild(commitElement);
+				
+				Element fixedFilesElement = doc.createElement("fixedFiles");
+				for (String fixedFile : bugReport.getFixedFiles()) {
+					Element fileElement = doc.createElement("file");
+					fileElement.appendChild(doc.createTextNode(fixedFile));
+					fixedFilesElement.appendChild(fileElement);
+				}
+				bugElement.appendChild(fixedFilesElement);
+				
+				// append bug element to root
+				root.appendChild(bugElement);
+			}
+			doc.setXmlStandalone(true);
+			TransformerFactory transformerFactory = TransformerFactory.newInstance();
+			Transformer transformer = transformerFactory.newTransformer();
+			transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+			transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
+			DOMSource source = new DOMSource(doc);
+			StreamResult result = new StreamResult(new File(output));
+			transformer.transform(source, result);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 	
 	/** convert excel cell value to string */
@@ -296,6 +362,18 @@ public class BugReportRepository {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+	}
+	
+	/**get list of bug reports sorted by commit time */
+	public List<BugReport> getSortedBugReports() {
+		List<BugReport> bugReportsList = new ArrayList<BugReport>(bugReports.values());
+		bugReportsList.sort(new Comparator<BugReport>() {
+			@Override
+			public int compare(BugReport o1, BugReport o2) {
+				return o1.getCommitTime().compareTo(o2.getCommitTime());
+			}
+		});
+		return bugReportsList;
 	}
 		
 }

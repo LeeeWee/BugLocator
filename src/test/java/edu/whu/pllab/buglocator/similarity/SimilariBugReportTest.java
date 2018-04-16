@@ -28,7 +28,7 @@ import edu.whu.pllab.buglocator.common.BugReport;
 import edu.whu.pllab.buglocator.common.BugReportRepository;
 import edu.whu.pllab.buglocator.common.SimilarBugReport;
 import edu.whu.pllab.buglocator.common.TokenScore;
-import edu.whu.pllab.buglocator.rankingModel.RankBySourceCodeSimilarity;
+import edu.whu.pllab.buglocator.rankingmodel.RankBySourceCodeSimilarity;
 import edu.whu.pllab.buglocator.utils.BugReportsSplitter;
 import edu.whu.pllab.buglocator.utils.FileUtil;
 import edu.whu.pllab.buglocator.vectorizer.BugReportTfidfVectorizer;
@@ -67,14 +67,13 @@ public class SimilariBugReportTest {
 		// split bug reports 
 		BugReportsSplitter splitter = new BugReportsSplitter(brRepo.getBugReports(), 10);
 		List<HashMap<Integer, BugReport>> bugReportsMapList = splitter.getBugReportsMapList();
-		List<String> lastCommitIDList = splitter.getLastCommitIDList(); // last committed bug report's commitID for each bug reports map 
+		List<String> preCommitIDList = splitter.getPreCommitIDList(); // last committed bug report's commitID for each bug reports map 
 	
 		int i = 0;
 		logger.info(String.format("Training on %d-th fold, test on %d-th fold", i, i+1));
 		trainingBugReports = bugReportsMapList.get(i);
 		testBugReports = bugReportsMapList.get(i + 1);
 		
-		HashSet<String> sourceCodeFiles = getAllSourceCodeFiles(lastCommitIDList.get(i));
 		
 		// train tfidf model using training bug reports
 		BugReportTfidfVectorizer brVectorizer = new BugReportTfidfVectorizer(trainingBugReports);
@@ -83,6 +82,7 @@ public class SimilariBugReportTest {
 		brVectorizer.calculateTokensWeight(trainingBugReports);
 		brVectorizer.calculateTokensWeight(testBugReports);
 		
+		HashSet<String> sourceCodeFiles = getAllSourceCodeFiles(preCommitIDList.get(i+1));
 		filterBugReports(testBugReports, sourceCodeFiles);
 		
 		traingBRsFixedFiles = new ArrayList<String>();
@@ -255,13 +255,13 @@ public class SimilariBugReportTest {
 		brRepo = new BugReportRepository();
 		BugReportsSplitter splitter = new BugReportsSplitter(brRepo.getBugReports(), batches);
 		List<HashMap<Integer, BugReport>> bugReportsMapList = splitter.getBugReportsMapList();
-		List<String> lastCommitIDList = splitter.getLastCommitIDList(); // last committed bug report's commitID for each bug reports map 
+		List<String> preCommitIDList = splitter.getPreCommitIDList(); // last committed bug report's commitID for each bug reports map 
 		for (int i = 0; i < batches - 1; i++) {
 			System.out.println("Test for " + (i+1) + "-th batch...");
 			trainingBugReports = bugReportsMapList.get(i);
 			testBugReports = bugReportsMapList.get(i + 1);
 			
-			HashSet<String> sourceCodeFiles = getAllSourceCodeFiles(lastCommitIDList.get(i));
+			HashSet<String> sourceCodeFiles = getAllSourceCodeFiles(preCommitIDList.get(i + 1));
 			filterBugReports(testBugReports, sourceCodeFiles);
 			
 			traingBRsFixedFiles = new ArrayList<String>();

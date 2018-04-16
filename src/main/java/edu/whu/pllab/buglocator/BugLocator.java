@@ -46,7 +46,7 @@ public class BugLocator {
 			// split bug reports 
 			BugReportsSplitter splitter = new BugReportsSplitter(brRepo.getBugReports(), property.getSplitNum());
 			List<HashMap<Integer, BugReport>> bugReportsMapList = splitter.getBugReportsMapList();
-			List<String> lastCommitIDList = splitter.getLastCommitIDList(); // last committed bug report's commitID for each bug reports map 
+			List<String> preCommitIDList = splitter.getPreCommitIDList(); // last committed bug report's commitID for each bug reports map 
 			
 			// train on the k fold and test on the k+1 fold, for k < n, n is folds total number
 			for (int i = 0; i < bugReportsMapList.size() - 1; i++) {
@@ -54,8 +54,8 @@ public class BugLocator {
 				HashMap<Integer, BugReport> trainingBugReports = bugReportsMapList.get(i);
 				HashMap<Integer, BugReport> testBugReports = bugReportsMapList.get(i + 1);
 				
-				// reset source code repository to the i-th lastCommitID version, and train tfidf model
-				SourceCodeRepository codeRepo = new SourceCodeRepository(lastCommitIDList.get(i));
+				// reset source code repository to the i-th preCommitIDList version, and train tfidf model
+				SourceCodeRepository codeRepo = new SourceCodeRepository(preCommitIDList.get(i));
 				SourceCodeTfidfVectorizer codeVectorizer = new SourceCodeTfidfVectorizer(codeRepo.getSourceCodeMap());
 				codeVectorizer.train();
 				codeVectorizer.calculateTokensWeight(codeRepo.getSourceCodeMap());
@@ -75,7 +75,14 @@ public class BugLocator {
 				generator.generate(true);
 				generator.writeRankingFeatures(property.getTrainingFeaturesPath());
 				generator.saveParameters(new File(property.getFeaturesExtremumPath()));
+				
+				// reset source code repository to the i+1-th version, retrain tfidf model
+				codeRepo = new SourceCodeRepository(preCommitIDList.get(i + 1));
+				codeVectorizer = new SourceCodeTfidfVectorizer(codeRepo.getSourceCodeMap());
+				codeVectorizer.train();
+				codeVectorizer.calculateTokensWeight(codeRepo.getSourceCodeMap());
 				// generate test data
+				generator.setSourceCodeMap(codeRepo.getSourceCodeMap());
 				generator.setTestBugReportsMap(testBugReports);
 				generator.generate(false);
 				generator.writeRankingFeatures(property.getTestFeaturesPath());

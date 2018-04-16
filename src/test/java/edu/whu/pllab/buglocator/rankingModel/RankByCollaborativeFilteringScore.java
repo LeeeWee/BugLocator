@@ -1,4 +1,4 @@
-package edu.whu.pllab.buglocator.rankingModel;
+package edu.whu.pllab.buglocator.rankingmodel;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
@@ -51,7 +51,7 @@ public class RankByCollaborativeFilteringScore {
 		// split bug reports 
 		BugReportsSplitter splitter = new BugReportsSplitter(brRepo.getBugReports(), 10);
 		List<HashMap<Integer, BugReport>> bugReportsMapList = splitter.getBugReportsMapList();
-		List<String> lastCommitIDList = splitter.getLastCommitIDList(); // last committed bug report's commitID for each bug reports map 
+		List<String> preCommitIDList = splitter.getPreCommitIDList(); // last committed bug report's commitID for each bug reports map 
 		
 		// train on the k fold and test on the k+1 fold, for k < n, n is folds total number
 		for (int i = 0; i < bugReportsMapList.size() - 1; i++) {
@@ -60,7 +60,7 @@ public class RankByCollaborativeFilteringScore {
 			testBugReports = bugReportsMapList.get(i + 1);
 			
 			// reset source code repository to the i-th lastCommitID version, and train tfidf model
-			SourceCodeRepository codeRepo = new SourceCodeRepository(lastCommitIDList.get(i));
+//			SourceCodeRepository codeRepo = new SourceCodeRepository(preCommitIDList.get(i));
 //			SourceCodeTfidfVectorizer codeVectorizer = new SourceCodeTfidfVectorizer(codeRepo.getSourceCodeMaps());
 //			codeVectorizer.train();
 //			codeVectorizer.calculateTokensWeight(codeRepo.getSourceCodeMaps());
@@ -72,6 +72,7 @@ public class RankByCollaborativeFilteringScore {
 			brVectorizer.calculateTokensWeight(trainingBugReports);
 			brVectorizer.calculateTokensWeight(testBugReports);
 			
+			SourceCodeRepository codeRepo = new SourceCodeRepository(preCommitIDList.get(i+1));
 			filterBugReports(testBugReports, codeRepo.getSourceCodeMap());
 			
 			HashMap<BugReport, List<IntegratedScore>> testIntegratedScores = sortByCollaborativeFilteringScore();

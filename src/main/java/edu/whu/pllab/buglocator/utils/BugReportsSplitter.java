@@ -16,7 +16,7 @@ public class BugReportsSplitter {
 
 	private HashMap<Integer, BugReport> bugReports;
 	private List<HashMap<Integer, BugReport>> bugReportsMapList;
-	private List<String> lastCommitIDList;
+	private List<String> preCommitIDList;
 	
 	private int n;
 	
@@ -29,7 +29,7 @@ public class BugReportsSplitter {
 	public void splitBugReportsMap(int n) {
 		logger.info("split bug reports map to " + n + " subMaps chromologically...");
 		bugReportsMapList = new ArrayList<HashMap<Integer, BugReport>>();
-		lastCommitIDList = new ArrayList<String>();
+		preCommitIDList = new ArrayList<String>();
 		for (int i = 0; i < n; i++) {
 			HashMap<Integer, BugReport> subBugReportMap = new HashMap<Integer, BugReport>();
 			bugReportsMapList.add(subBugReportMap);
@@ -45,16 +45,17 @@ public class BugReportsSplitter {
 		logger.info("Average subMaps size: " + averSize);
 		int i = 0;
 		int index = 0;
+		preCommitIDList.add(bugReportsList.get(0).getCommitID() + "~");
 		HashMap<Integer, BugReport> subBugReportMap = bugReportsMapList.get(index);
 		for (int j = 0; j < bugReportsList.size(); j++) {
 			BugReport bugReport = bugReportsList.get(j);
 			subBugReportMap.put(bugReport.getBugID(), bugReport);
 			i++;
 			if (i > averSize && index < n) {
-				lastCommitIDList.add(bugReport.getCommitID());
 				i = 0;
 				index++;
 				subBugReportMap = bugReportsMapList.get(index);
+				preCommitIDList.add(bugReportsList.get(j+1).getCommitID() + "~");
 			}
 		}
 	}
@@ -75,12 +76,12 @@ public class BugReportsSplitter {
 		this.bugReportsMapList = bugReportsMapList;
 	}
 	
-	public List<String> getLastCommitIDList() {
-		return lastCommitIDList;
+	public List<String> getPreCommitIDList() {
+		return preCommitIDList;
 	}
 
-	public void setLastCommitIDList(List<String> lastCommitIDList) {
-		this.lastCommitIDList = lastCommitIDList;
+	public void setPreCommitIDList(List<String> preCommitIDList) {
+		this.preCommitIDList = preCommitIDList;
 	}
 
 	public int getN() {

@@ -6,14 +6,12 @@ import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.TreeSet;
 import java.util.Map.Entry;
-
+import java.util.TreeSet;
 
 import edu.whu.pllab.buglocator.Property;
 import edu.whu.pllab.buglocator.common.BugReport;
 import edu.whu.pllab.buglocator.common.BugReportRepository;
-import edu.whu.pllab.buglocator.common.Method;
 import edu.whu.pllab.buglocator.common.SourceCode;
 import edu.whu.pllab.buglocator.common.SourceCodeRepository;
 import edu.whu.pllab.buglocator.evaluation.Evaluator;
@@ -29,9 +27,9 @@ public class VSMRankTestOnBRTracerData {
 	public static void main(String[] args) throws Exception {
 		
 		String[] products = {"swt", "aspectj", "eclipse"};
-		String[] bugFilePaths = {"D:\\data\\buglocalization\\BRTracer\\Dataset\\SWTBugRepository.xml",
-								"D:\\data\\buglocalization\\BRTracer\\Dataset\\AspectJBugRepository.xml",
-								"D:\\data\\buglocalization\\BRTracer\\Dataset\\EclipseBugRepository.xml"};
+		String[] bugFilePaths = {"D:\\data\\buglocalization\\BRTracer\\Dataset\\new_xml\\new_SWTBugRepository.xml",
+								"D:\\data\\buglocalization\\BRTracer\\Dataset\\new_xml\\new_AspectJBugRepository.xml",
+								"D:\\data\\buglocalization\\BRTracer\\Dataset\\new_xml\\new_EclipseBugRepository.xml"};
 		String[] sourceCodeDirs = {"D:\\data\\buglocalization\\BRTracer\\Dataset\\swt-3.1\\src",
 									"D:\\data\\buglocalization\\BRTracer\\Dataset\\aspectj",
 									"D:\\data\\buglocalization\\BRTracer\\Dataset\\eclipse-3.1\\plugins"};
@@ -43,8 +41,6 @@ public class VSMRankTestOnBRTracerData {
 			property.setBugFilePath(bugFilePaths[index]);
 			property.setSourceCodeDir(sourceCodeDirs[index]);
 			
-			property.printValues();
-			
 			/** record evaluate result */
 			BufferedWriter logWriter = new BufferedWriter(new FileWriter(property.getEvaluateLogPath()));
 			
@@ -52,12 +48,15 @@ public class VSMRankTestOnBRTracerData {
 			
 			// initialize bugReport Repository
 			BugReportRepository brRepo = new BugReportRepository();
+			
 			SourceCodeRepository codeRepo = new SourceCodeRepository();
 			// save to xml
 			codeRepo.saveSourceCodeRepoToXML(property.getCodeRepositoryXMLPath(), property.getProduct());
 			
 			if (property.getProduct().equals("swt") || property.getProduct().equals("eclipse"))
 				modifyFilesPath(brRepo, codeRepo);
+			
+			
 			
 			SourceCodeTfidfVectorizer codeTfidfVectorizer = new SourceCodeTfidfVectorizer(codeRepo.getSourceCodeMap());
 			codeTfidfVectorizer.train();
@@ -108,7 +107,6 @@ public class VSMRankTestOnBRTracerData {
 			
 			logWriter.write(evaluator.getExperimentResult().toString() + "\n\n");
 			logWriter.close();
-			
 		}
 		
 	}

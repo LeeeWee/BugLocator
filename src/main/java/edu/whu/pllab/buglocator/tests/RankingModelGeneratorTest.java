@@ -29,7 +29,7 @@ public class RankingModelGeneratorTest {
 		List<HashMap<Integer, BugReport>> bugReportsMapList = validation.getBugReportsMapList();
 		HashMap<Integer, BugReport> trainingBugReports = bugReportsMapList.get(0);
 		HashMap<Integer, BugReport> testBugReports = bugReportsMapList.get(1);
-		List<String> lastCommitIDList = validation.getLastCommitIDList();
+		List<String> preCommitIDList = validation.getPreCommitIDList();
 		
 		// training tfidf model for training BugReorts
 		BugReportTfidfVectorizer brVectorizer = new BugReportTfidfVectorizer(trainingBugReports);
@@ -37,7 +37,7 @@ public class RankingModelGeneratorTest {
 		brVectorizer.calculateTokensWeight(brRepo.getBugReports());
 		
 		// initialize source code repository
-		SourceCodeRepository codeRepo = new SourceCodeRepository(lastCommitIDList.get(0));
+		SourceCodeRepository codeRepo = new SourceCodeRepository(preCommitIDList.get(0));
 		SourceCodeTfidfVectorizer codeVectorizer = new SourceCodeTfidfVectorizer(codeRepo.getSourceCodeMap());
 		codeVectorizer.train();
 		codeVectorizer.calculateTokensWeight(codeRepo.getSourceCodeMap());
@@ -50,6 +50,12 @@ public class RankingModelGeneratorTest {
 		generator.generate(true);
 		generator.writeRankingFeatures(property.getTrainingFeaturesPath());
 		generator.saveParameters(new File(property.getFeaturesExtremumPath()));
+		
+		// reset source code repository to the i+1-th version, retrain tfidf model
+		codeRepo = new SourceCodeRepository(preCommitIDList.get(1));
+		codeVectorizer = new SourceCodeTfidfVectorizer(codeRepo.getSourceCodeMap());
+		codeVectorizer.train();
+		codeVectorizer.calculateTokensWeight(codeRepo.getSourceCodeMap());
 		// generate test data
 		generator.setTestBugReportsMap(testBugReports);
 		generator.generate(false);

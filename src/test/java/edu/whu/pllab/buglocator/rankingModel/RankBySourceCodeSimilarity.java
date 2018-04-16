@@ -1,4 +1,4 @@
-package edu.whu.pllab.buglocator.rankingModel;
+package edu.whu.pllab.buglocator.rankingmodel;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
@@ -31,86 +31,83 @@ public class RankBySourceCodeSimilarity {
 	
 	public static void main(String[] args) throws Exception {
 		
-		Property property = Property.loadInstance();
+		String[] products = {"ASPECTJ", "SWT", "BIRT", "ECLIPSE_PLATFORM_UI", "TOMCAT", "JDT"};
 		
-		/** record evaluate result */
-		BufferedWriter logWriter = new BufferedWriter(new FileWriter(property.getEvaluateLogPath()));
-		
-		/** keep experiment result on each fold */
-		List<ExperimentResult> experimentResultList = new ArrayList<ExperimentResult>();
-		
-		// initialize bugReport Repository
-		BugReportRepository brRepo = new BugReportRepository();
-		
-		// split bug reports 
-		BugReportsSplitter splitter = new BugReportsSplitter(brRepo.getBugReports(), 10);
-		List<HashMap<Integer, BugReport>> bugReportsMapList = splitter.getBugReportsMapList();
-		List<String> lastCommitIDList = splitter.getLastCommitIDList(); // last committed bug report's commitID for each bug reports map 
-		
-		// train on the k fold and test on the k+1 fold, for k < n, n is folds total number
-		for (int i = 0; i < bugReportsMapList.size() - 1; i++) {
-			logger.info(String.format("Training on %d-th fold, test on %d-th fold", i, i+1));
-			HashMap<Integer, BugReport> trainingBugReports = bugReportsMapList.get(i);
-			HashMap<Integer, BugReport> testBugReports = bugReportsMapList.get(i + 1);
+		for (String product : products) {
 			
-			// reset source code repository to the i-th lastCommitID version, and train tfidf model
-			SourceCodeRepository codeRepo = new SourceCodeRepository(lastCommitIDList.get(i));
-			SourceCodeTfidfVectorizer codeVectorizer = new SourceCodeTfidfVectorizer(codeRepo.getSourceCodeMap());
-			codeVectorizer.train();
-			codeVectorizer.calculateTokensWeight(codeRepo.getSourceCodeMap());
+			Property property = Property.loadInstance(product);
 			
-			// train tfidf model using training bug reports
-			BugReportTfidfVectorizer brVectorizer = new BugReportTfidfVectorizer(trainingBugReports);
-			brVectorizer.train();
-			// TfidfVectorizer training and test bug reports
-			brVectorizer.calculateTokensWeight(trainingBugReports);
-			brVectorizer.calculateTokensWeight(testBugReports);
+			/** record evaluate result */
+			BufferedWriter logWriter = new BufferedWriter(new FileWriter(property.getEvaluateLogPath()));
 			
-			filterBugReports(testBugReports, codeRepo.getSourceCodeMap());
+			/** keep experiment result on each fold */
+			List<ExperimentResult> experimentResultList = new ArrayList<ExperimentResult>();
 			
-			HashMap<BugReport, List<IntegratedScore>> testIntegratedScores = sortBySourceCodeSimilarity(testBugReports,
-					codeRepo.getSourceCodeMap());
+			// initialize bugReport Repository
+			BugReportRepository brRepo = new BugReportRepository();
 			
-			Evaluator evaluator = new Evaluator(testIntegratedScores);
-			evaluator.evaluate();
+			// split bug reports 
+			BugReportsSplitter splitter = new BugReportsSplitter(brRepo.getBugReports(), property.getSplitNum());
+			List<HashMap<Integer, BugReport>> bugReportsMapList = splitter.getBugReportsMapList();
+			List<String> preCommitIDList = splitter.getPreCommitIDList(); 
 			
-			experimentResultList.add(evaluator.getExperimentResult());
-			logWriter.write(String.format("Trained on %d-th fold, test on %d-th fold:", i, i+1) + "\n");
-			logWriter.write(evaluator.getExperimentResult().toString() + "\n\n");
-			logWriter.flush();
-		}
-		
-		// pool the bug reports from all test folds and compute the overall system performance
-		int testDataSize = 0;
-		int[] topN = new int[ExperimentResult.N_ARRAY.length];
-		double sumOfRR = 0.0;
-		double sumOfAP = 0.0;
-		for (ExperimentResult result : experimentResultList) {
-			testDataSize += result.getTestDataSize();
-			for (int i = 0; i < result.getTopN().length; i++) {
-				topN[i] += result.getTopN()[i];
+			for (int i = 0; i < bugReportsMapList.size(); i++) {
+				HashMap<Integer, BugReport> bugReports = bugReportsMapList.get(i);
+			
+				SourceCodeRepository codeRepo = new SourceCodeRepository(preCommitIDList.get(i));
+				SourceCodeTfidfVectorizer codeVectorizer = new SourceCodeTfidfVectorizer(codeRepo.getSourceCodeMap());
+				codeVectorizer.train();
+				codeVectorizer.calculateTokensWeight(codeRepo.getSourceCodeMap());
+				filterBugReports(bugReports, codeRepo.getSourceCodeMap());
+				
+				// train tfidf model using training bug reports
+				BugReportTfidfVectorizer brVectorizer = new BugReportTfidfVectorizer(codeVectorizer.getTfidf());
+				brVectorizer.calculateTokensWeight(bugReports);
+				
+				HashMap<BugReport, List<IntegratedScore>> testIntegratedScores = sortBySourceCodeSimilarity(bugReports,
+						codeRepo.getSourceCodeMap());
+				
+				Evaluator evaluator = new Evaluator(testIntegratedScores);
+				evaluator.evaluate();
+				
+				experimentResultList.add(evaluator.getExperimentResult());
+				logWriter.write(String.format("test on %d-th fold:", i) + "\n");
+				logWriter.write(evaluator.getExperimentResult().toString() + "\n\n");
+				logWriter.flush();
 			}
-			sumOfRR += result.getSumOfRR();
-			sumOfAP += result.getSumOfAP();
+			
+			// pool the bug reports from all test folds and compute the overall system performance
+			int testDataSize = 0;
+			int[] topN = new int[ExperimentResult.N_ARRAY.length];
+			double sumOfRR = 0.0;
+			double sumOfAP = 0.0;
+			for (ExperimentResult result : experimentResultList) {
+				testDataSize += result.getTestDataSize();
+				for (int i = 0; i < result.getTopN().length; i++) {
+					topN[i] += result.getTopN()[i];
+				}
+				sumOfRR += result.getSumOfRR();
+				sumOfAP += result.getSumOfAP();
+			}
+			double MRR = sumOfRR / testDataSize;
+			double MAP = sumOfAP / testDataSize;
+			double[] topNRate = new double[topN.length];
+			for (int j = 0; j < topN.length; j++) {
+				topNRate[j] = (double) topN[j] / testDataSize;
+			}
+			ExperimentResult finalResult = new ExperimentResult(testDataSize, topN, topNRate, sumOfRR, MRR, sumOfAP, MAP);
+			
+			StringBuilder builder = new StringBuilder();
+			builder.append("\n");
+			builder.append("===================== Final Experiment Result =========================\n");
+			builder.append(finalResult.toString() + "\n");
+			builder.append("=======================================================================");
+			
+			System.out.println(builder.toString());
+			logWriter.write(builder.toString());
+			
+			logWriter.close();
 		}
-		double MRR = sumOfRR / testDataSize;
-		double MAP = sumOfAP / testDataSize;
-		double[] topNRate = new double[topN.length];
-		for (int j = 0; j < topN.length; j++) {
-			topNRate[j] = (double) topN[j] / testDataSize;
-		}
-		ExperimentResult finalResult = new ExperimentResult(testDataSize, topN, topNRate, sumOfRR, MRR, sumOfAP, MAP);
-		
-		StringBuilder builder = new StringBuilder();
-		builder.append("\n");
-		builder.append("===================== Final Experiment Result =========================\n");
-		builder.append(finalResult.toString() + "\n");
-		builder.append("=======================================================================");
-		
-		System.out.println(builder.toString());
-		logWriter.write(builder.toString());
-		
-		logWriter.close();
 	}
 	
 	public static HashMap<BugReport, List<IntegratedScore>> sortBySourceCodeSimilarity(

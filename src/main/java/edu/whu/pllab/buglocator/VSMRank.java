@@ -4,7 +4,6 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -37,8 +36,8 @@ public class VSMRank {
 	
 	public static void main(String[] args) throws Exception {
 		
-//		String[] products = {"ASPECTJ", "SWT", "BIRT", "ECLIPSE_PLATFORM_UI", "TOMCAT", "JDT"};
-		String[] products = {"ECLIPSE_PLATFORM_UI"};
+		String[] products = {"ASPECTJ", "SWT", "BIRT", "ECLIPSE_PLATFORM_UI", "TOMCAT", "JDT"};
+//		String[] products = {"ECLIPSE_PLATFORM_UI"};
 		
 		for (String product : products) {
 			Property property = Property.loadInstance(product);
@@ -53,13 +52,7 @@ public class VSMRank {
 			BugReportRepository brRepo = new BugReportRepository();
 			
 			// sort bug reports by commit time
-			List<BugReport> bugReportsList = new ArrayList<BugReport>(brRepo.getBugReports().values());
-			bugReportsList.sort(new Comparator<BugReport>() {
-				@Override
-				public int compare(BugReport o1, BugReport o2) {
-					return o1.getCommitTime().compareTo(o2.getCommitTime());
-				}
-			});
+			List<BugReport> bugReportsList = brRepo.getSortedBugReports();
 			
 			// retain bugs in testing_data in XinYe dir
 			String[] testingFiles = new File("D:\\data\\XinYe\\eclipse.platform.ui\\testing_data").list();

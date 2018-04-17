@@ -126,7 +126,6 @@ public class Similarity {
 					continue;
 				// calculate field similarity
 				double fieldSim = vsmSimilarityWithoutNorm(brFieldTokens, codeFieldTokens) / (brFieldNorm * codeFieldNorm);
-				
 				sim += fieldSim;
 			}
 		}

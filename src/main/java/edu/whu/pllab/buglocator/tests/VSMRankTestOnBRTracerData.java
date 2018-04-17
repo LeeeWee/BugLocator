@@ -87,7 +87,7 @@ public class VSMRankTestOnBRTracerData {
 						builder.append("\tTotal java files: " + codeRepo.getSourceCodeMap().size() + "\n");
 						builder.append("\tFirst hit: " + j + " " + integratedScore.getPath() + " "
 								+ integratedScore.getIntegratedScore() + "\n");
-						System.out.println(builder.toString());
+//						System.out.println(builder.toString());
 						logWriter.write(builder.toString());
 						logWriter.flush();
 						break;

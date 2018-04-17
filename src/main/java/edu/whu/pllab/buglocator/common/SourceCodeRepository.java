@@ -117,6 +117,7 @@ public class SourceCodeRepository {
 	 */
 	public SourceCodeRepository(String version) {
 		logger.info("Resetting source code repository to version " + version + "...");
+		useStructuredInformation = Property.USE_STRUCTURED_INFORMATION;
 		this.version = version;
 		Property property = Property.getInstance();
 		sourceCodeDir = property.getSourceCodeDir();

@@ -193,9 +193,11 @@ public class RankingModelGenerator {
 		
 		logger.info("Total bug reports:" + bugReportsMap.size() + ", lost bug reports:" + lostBr);
 		// normalize all features
-		for (List<IntegratedScore> integratedScoreList : finals.values()) {
-			for (IntegratedScore integratedScore : integratedScoreList) {
-				normalize(integratedScore.getFeatures());
+		if (isTraining) {
+			for (List<IntegratedScore> integratedScoreList : finals.values()) {
+				for (IntegratedScore integratedScore : integratedScoreList) {
+					normalize(integratedScore.getFeatures());
+				}
 			}
 		}
 	}
@@ -228,11 +230,11 @@ public class RankingModelGenerator {
 		List<IntegratedScore> integratedScoreList = new ArrayList<IntegratedScore>();
 		
 		// calculate clooaborativeFiltering score for all source code file
-		HashMap<String, Double> collaborativeFilteringScoreMap = calculateCollaborativeFilteringScore(br);
+		HashMap<String, Double> simiScoreMap = calculateSimiScore(br);
 		
 		// Enum code files.
 		for (SourceCode code : sourceCodeMap.values()) {
-			double[] features = generate(br, code, collaborativeFilteringScoreMap, isTraining);
+			double[] features = generate(br, code, simiScoreMap, isTraining);
 			if (features == null)
 				continue;
 			boolean isModified = false;
@@ -261,12 +263,12 @@ public class RankingModelGenerator {
 	}
 	
 	/** calculate features for given bug report and source code file, if isTraining is false, normalize features */
-	public double[] generate(BugReport br, SourceCode code, HashMap<String, Double> collaborativeFilteringScoreMap,
+	public double[] generate(BugReport br, SourceCode code, HashMap<String, Double> simiScoreMap,
 			boolean isTraining) {
 		double sourceCodeSimilarity = calculateSourceCodeSimilarity(br, code);
 		double APISimilarity = calculateAPISimilarity(br, code);
-		double collaborativeFilteringScore = collaborativeFilteringScoreMap.containsKey(code.getPath())
-				? collaborativeFilteringScoreMap.get(code.getPath()) : 0.0;
+		double collaborativeFilteringScore = simiScoreMap.containsKey(code.getPath())
+				? simiScoreMap.get(code.getPath()) : 0.0;
 		double classNameSimilarity = calculateClassNameSimilarity(br ,code);
 		double recency = calculateRecency(br, code);
 		double frequency = calculateFrequency(br, code);
@@ -351,19 +353,19 @@ public class RankingModelGenerator {
 	*/
 	
 	/** calculate collaborative filter score for given bug report */
-	public HashMap<String, Double> calculateCollaborativeFilteringScore(BugReport br) {
-		HashMap<String, Double> collaborativeFilteringScoreMap = new HashMap<String, Double>();
+	public HashMap<String, Double> calculateSimiScore(BugReport br) {
+		HashMap<String, Double> simiScoreMap = new HashMap<String, Double>();
 		List<SimilarBugReport> similarBugReports = getSimilarBugReports(br, TOP_SIMILAR_BUG_REPORTS);
 		for (SimilarBugReport similarBugReport : similarBugReports) {
 			for (String fixedFile : similarBugReport.getFixedFiles()) {
-				if (!collaborativeFilteringScoreMap.containsKey(fixedFile))
-					collaborativeFilteringScoreMap.put(fixedFile, 0.0);
+				if (!simiScoreMap.containsKey(fixedFile))
+					simiScoreMap.put(fixedFile, 0.0);
 				else 
-					collaborativeFilteringScoreMap.put(fixedFile, collaborativeFilteringScoreMap.get(fixedFile)
+					simiScoreMap.put(fixedFile, simiScoreMap.get(fixedFile)
 							+ similarBugReport.getSimilarity() / similarBugReport.getFixedFiles().size());
 			}
 		}
-		return collaborativeFilteringScoreMap;
+		return simiScoreMap;
 	}
 	
 	/**

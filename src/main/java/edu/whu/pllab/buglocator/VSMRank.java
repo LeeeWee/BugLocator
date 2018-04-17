@@ -5,8 +5,6 @@ import java.io.File;
 import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
 
@@ -14,12 +12,9 @@ import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.ResetCommand.ResetType;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import edu.whu.pllab.buglocator.common.BugReport;
 import edu.whu.pllab.buglocator.common.BugReportRepository;
-import edu.whu.pllab.buglocator.common.Method;
 import edu.whu.pllab.buglocator.common.SourceCode;
 import edu.whu.pllab.buglocator.common.SourceCodeRepository;
 import edu.whu.pllab.buglocator.evaluation.Evaluator;
@@ -29,8 +24,6 @@ import edu.whu.pllab.buglocator.vectorizer.BugReportTfidfVectorizer;
 import edu.whu.pllab.buglocator.vectorizer.SourceCodeTfidfVectorizer;
 
 public class VSMRank {
-	
-	private static final Logger logger = LoggerFactory.getLogger(BugLocator.class);
 	
 	private static final String INVALID_BUG_REPORT_PATH = "invalidBugReports.txt";
 	
@@ -54,19 +47,6 @@ public class VSMRank {
 			// sort bug reports by commit time
 			List<BugReport> bugReportsList = brRepo.getSortedBugReports();
 			
-			// retain bugs in testing_data in XinYe dir
-			String[] testingFiles = new File("D:\\data\\XinYe\\eclipse.platform.ui\\testing_data").list();
-			HashSet<Integer> testingBugs = new HashSet<Integer>();
-			for (String testingFile : testingFiles) 
-				testingBugs.add(Integer.parseInt(testingFile.substring(0, testingFile.lastIndexOf("."))));
-			Iterator<BugReport> iter = bugReportsList.iterator();
-			while (iter.hasNext()) {
-				BugReport br = iter.next();
-				if (!testingBugs.contains(br.getBugID()))
-					iter.remove();
-			}
-			logger.info("Bugs: " + bugReportsList.size());
-			
 			String earliestCommitID = bugReportsList.get(0).getCommitID();
 			
 			// reset source code repository to the earliestCommitID~ version, and train tfidf model
@@ -80,7 +60,7 @@ public class VSMRank {
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
-			SourceCodeRepository codeRepo = new SourceCodeRepository();
+			SourceCodeRepository codeRepo = new SourceCodeRepository(); 
 //			SourceCodeRepository codeRepo = new SourceCodeRepository(earliestCommitID + "~");
 			SourceCodeTfidfVectorizer codeTfidfVectorizer = new SourceCodeTfidfVectorizer(codeRepo.getSourceCodeMap());
 			codeTfidfVectorizer.train();
@@ -144,11 +124,11 @@ public class VSMRank {
 		List<IntegratedScore> integratedScoreList = new ArrayList<IntegratedScore>();
 		for (Entry<String, SourceCode> entry : sourceCodeMap.entrySet()) {
 			double similarity = Similarity.similarity(bugReport, entry.getValue(), Similarity.VSM);
-			for (Method method : entry.getValue().getMethodList()) {
-				double methodSimilarity = Similarity.similarity(bugReport, method, Similarity.VSM);
-				if (methodSimilarity > similarity)
-					similarity = methodSimilarity;
-			}
+//			for (Method method : entry.getValue().getMethodList()) {
+//				double methodSimilarity = Similarity.similarity(bugReport, method, Similarity.VSM);
+//				if (methodSimilarity > similarity)
+//					similarity = methodSimilarity;
+//			}
 			IntegratedScore score = new IntegratedScore(entry.getKey(), false, null);
 			score.setIntegratedScore(similarity);
 			integratedScoreList.add(score);

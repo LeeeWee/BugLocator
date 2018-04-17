@@ -185,7 +185,7 @@ public class FileParser {
 					parameters = parameters.trim();
 					Method method = new Method(methodName, returnTypeString, parameters);
 					// split method content
-					method.setContent(splitContent(methodDecl.toString()));
+					method.setContent(splitContent(methodDecl.toString()) + " " + Stemmer.stem(methodName));
 					allMethodList.add(method);
 					return super.visit(methodDecl);
 	    		}

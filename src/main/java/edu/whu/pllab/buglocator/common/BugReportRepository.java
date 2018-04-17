@@ -210,12 +210,12 @@ public class BugReportRepository {
 				bugElement.appendChild(summaryElement);
 				
 				Element descriptionElement = doc.createElement("description");
-				summaryElement.appendChild(doc.createTextNode(bugReport.getDescription()));
+				descriptionElement.appendChild(doc.createTextNode(bugReport.getDescription()));
 				bugElement.appendChild(descriptionElement);
 				
 				Element commitElement = doc.createElement("commit");
 				if (!bugReport.getCommitID().isEmpty())
-					commitElement.setAttribute("id", bugReport.getCommitID());
+					commitElement.setAttribute("id", bugReport.getCommitID().substring(0, 7));
 				commitElement.setAttribute("commitTime", sdf.format(bugReport.getCommitTime()));
 				bugElement.appendChild(commitElement);
 				

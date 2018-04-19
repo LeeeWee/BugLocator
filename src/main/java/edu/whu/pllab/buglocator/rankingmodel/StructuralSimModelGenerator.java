@@ -38,7 +38,8 @@ public class StructuralSimModelGenerator {
 	public static final int BR_BR_SIMILARITY = Similarity.VSM;
 	public static final int BR_CODE_SIMILARITY = Similarity.VSM;
 	
-	private static boolean normalizePerBugReport = true; 
+	private boolean normalize;
+	private boolean normalizePerBugReport = true; 
 
 	private HashMap<Integer, BugReport> trainingBugReportsMap;
 	private HashMap<Integer, BugReport> testBugReportsMap;
@@ -127,10 +128,12 @@ public class StructuralSimModelGenerator {
 		
 		logger.info("Total bug reports:" + bugReportsMap.size() + ", lost bug reports:" + lostBr);
 		// normalize all features
-		if (isTraining && !normalizePerBugReport) {
-			for (List<IntegratedScore> integratedScoreList : finals.values()) {
-				for (IntegratedScore integratedScore : integratedScoreList) {
-					normalize(integratedScore.getFeatures());
+		if (normalize) {
+			if (isTraining && !normalizePerBugReport) {
+				for (List<IntegratedScore> integratedScoreList : finals.values()) {
+					for (IntegratedScore integratedScore : integratedScoreList) {
+						normalize(integratedScore.getFeatures());
+					}
 				}
 			}
 		}
@@ -168,7 +171,7 @@ public class StructuralSimModelGenerator {
 		for (int i = 1; i < maxFieldSimilarities.length; i++)
 			maxFieldSimilarities[i] = Double.MIN_VALUE;
 		for (int i = 1; i < minFieldSimilarities.length; i++)
-			minFieldSimilarities[i] = Double.MIN_VALUE;
+			minFieldSimilarities[i] = Double.MAX_VALUE;
 		
 		// Enum code files.
 		for (SourceCode code : sourceCodeMap.values()) {
@@ -176,11 +179,13 @@ public class StructuralSimModelGenerator {
 			if (features == null)
 				continue;
 			
-			if (normalizePerBugReport) {
-				updateMaxMinFeatures(features, maxFieldSimilarities, minFieldSimilarities);
-			} else {
-				if (isTraining) {
-					updateMaxMinFeatures(features);
+			if (normalize) {
+				if (normalizePerBugReport) {
+					updateMaxMinFeatures(features, maxFieldSimilarities, minFieldSimilarities);
+				} else {
+					if (isTraining) {
+						updateMaxMinFeatures(features);
+					}
 				}
 			}
 			
@@ -191,7 +196,7 @@ public class StructuralSimModelGenerator {
 			}
 			integratedScoreList.add(new IntegratedScore(code.getPath(), isModified, features));
 		}
-		if (normalizePerBugReport) {
+		if (normalize && normalizePerBugReport) {
 			for (IntegratedScore integratedScore : integratedScoreList) {
 				normalize(integratedScore.getFeatures(), maxFieldSimilarities, minFieldSimilarities);
 			}
@@ -258,7 +263,7 @@ public class StructuralSimModelGenerator {
 		// set features[0] fieldSimilaritySum, used to get top N candidate source code
 		features[0] = fieldSimilaritySum;
 		// if is testing and not normalizePerBugReport, normalize with global min/maxFieldSimilarities 
-		if (!isTraining && !normalizePerBugReport)
+		if (normalize && !isTraining && !normalizePerBugReport)
 			normalize(features);
 		
 		return features;
@@ -343,12 +348,12 @@ public class StructuralSimModelGenerator {
 		}
 	}
 
-	public static boolean isNormalizePerBugReport() {
+	public boolean isNormalizePerBugReport() {
 		return normalizePerBugReport;
 	}
 
-	public static void setNormalizePerBugReport(boolean normalizePerBugReport) {
-		StructuralSimModelGenerator.normalizePerBugReport = normalizePerBugReport;
+	public void setNormalizePerBugReport(boolean normalizePerBugReport) {
+		this.normalizePerBugReport = normalizePerBugReport;
 	}
 
 	public HashMap<Integer, BugReport> getTrainingBugReportsMap() {
@@ -381,6 +386,14 @@ public class StructuralSimModelGenerator {
 
 	public void setFinals(HashMap<BugReport, List<IntegratedScore>> finals) {
 		this.finals = finals;
+	}
+
+	public boolean isNormalize() {
+		return normalize;
+	}
+
+	public void setNormalize(boolean normalize) {
+		this.normalize = normalize;
 	}
 	
 }

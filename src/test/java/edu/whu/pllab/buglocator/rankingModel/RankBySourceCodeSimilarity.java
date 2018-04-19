@@ -56,6 +56,7 @@ public class RankBySourceCodeSimilarity {
 //			List<BugReport> sortedBugReports = brRepo.getSortedBugReports();
 			SourceCodeRepository codeRepo = new SourceCodeRepository();
 //			SourceCodeRepository codeRepo = new SourceCodeRepository(sortedBugReports.get(sortedBugReports.size() - 1).getCommitID());
+			codeRepo.saveSourceCodeRepoToXML(property.getCodeRepositoryXMLPath(), property.getProduct());
 			
 			// get valid bug reports
 			List<String> sourceCodeFilesList = FileUtil.getAllFiles(property.getSourceCodeDir(), ".java");

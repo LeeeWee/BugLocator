@@ -469,7 +469,7 @@ public class SourceCodeRepository {
 					methodFieldElement.appendChild(doc.createTextNode(code.getSourceCodeCorpus().getMethodPart()));
 					codeElement.appendChild(methodFieldElement);
 					
-					Element commentElement = doc.createElement("commentPart");
+					Element commentElement = doc.createElement("CommentPart");
 					commentElement.appendChild(doc.createTextNode(code.getSourceCodeCorpus().getCommentPart()));
 					codeElement.appendChild(commentElement);
 				}

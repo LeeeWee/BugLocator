@@ -17,6 +17,7 @@ import edu.whu.pllab.buglocator.evaluation.Evaluator;
 import edu.whu.pllab.buglocator.rankingmodel.IntegratedScore;
 import edu.whu.pllab.buglocator.rankingmodel.SVMRank;
 import edu.whu.pllab.buglocator.rankingmodel.StructuralSimModelGenerator;
+import edu.whu.pllab.buglocator.tests.SimpleEvaluate;
 import edu.whu.pllab.buglocator.utils.BugReportsSplitter;
 import edu.whu.pllab.buglocator.vectorizer.BugReportTfidfVectorizer;
 import edu.whu.pllab.buglocator.vectorizer.SourceCodeTfidfVectorizer;
@@ -57,13 +58,25 @@ public class StructureSimilarityLR {
 			List<HashMap<Integer, BugReport>> bugReportsMapList = splitter.getBugReportsMapList();
 			
 			StructuralSimModelGenerator generator = new StructuralSimModelGenerator();
+			generator.setNormalize(false);
 			generator.setSourceCodeMap(codeRepo.getSourceCodeMap());
 			
 			// train on the k fold and test on the k+1 fold, for k < n, n is folds total number
 			for (int i = 0; i < bugReportsMapList.size() - 1; i++) {
-				logger.info(String.format("Training on %d-th fold, test on %d-th fold", i, i+1));
-				HashMap<Integer, BugReport> trainingBugReports = bugReportsMapList.get(i);
-				HashMap<Integer, BugReport> testBugReports = bugReportsMapList.get(i + 1);
+				/**
+				logger.info(String.format("Training on %d-th fold, test on %d-th fold", i, i + 1));
+				HashMap<Integer, BugReport> trainingBugReports =  bugReportsMapList.get(i);
+				HashMap<Integer, BugReport> testBugReports =  bugReportsMapList.get(i + 1);
+				*/
+				
+				logger.info(String.format("Test on %d-th fold", i));
+				HashMap<Integer, BugReport> trainingBugReports = new HashMap<Integer, BugReport>();
+				for (int j = 0; j < bugReportsMapList.size(); j++) {
+					if (j == i)
+						continue;
+					trainingBugReports.putAll(bugReportsMapList.get(j));
+				}
+				HashMap<Integer, BugReport> testBugReports = bugReportsMapList.get(i); 
 				
 				// generate training data
 				generator.setTrainingBugReportsMap(trainingBugReports);
@@ -76,7 +89,7 @@ public class StructureSimilarityLR {
 				generator.writeRankingFeatures(property.getTestFeaturesPath());
 				
 				// svm rank training and predicting
-				SVMRank.train(20);
+				SVMRank.train(0.001);
 				SVMRank.predict();
 				
 				// get test integratedScores
@@ -88,9 +101,21 @@ public class StructureSimilarityLR {
 				
 				experimentResultList.add(evaluator.getExperimentResult());
 				
-				logWriter.write(String.format("Trained on %d-th fold, test on %d-th fold:", i, i+1) + "\n");
+				logWriter.write(String.format("test on %d-th fold:", i) + "\n");
 				logWriter.write(evaluator.getExperimentResult().toString() + "\n\n");
 				logWriter.flush();
+				
+				SimpleEvaluate simpleEvaluate = new SimpleEvaluate(property.getSVMRankModelPath());
+				logWriter.write("Evaluating on training data\n");
+				System.out.println("Evaluating on training data\n");
+				logWriter.write(simpleEvaluate.evaluate(property.getTrainingFeaturesPath()));
+				logWriter.write("Evaluating on test data for direct adding\n");
+				System.out.println("Evaluating on test data for direct adding\n");
+				logWriter.write(simpleEvaluate.directAddingEvaluate(property.getTestFeaturesPath()));
+				logWriter.write("Evaluating on training data for direct adding\n");
+				System.out.println("Evaluating on training data for direct adding\n");
+				logWriter.write(simpleEvaluate.directAddingEvaluate(property.getTrainingFeaturesPath()));
+				
 			}
 			
 			// pool the bug reports from all test folds and compute the overall system performance

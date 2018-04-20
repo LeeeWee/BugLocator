@@ -62,7 +62,7 @@ public class StructureSimilarityLR {
 			generator.setSourceCodeMap(codeRepo.getSourceCodeMap());
 			
 			// train on the k fold and test on the k+1 fold, for k < n, n is folds total number
-			for (int i = 0; i < bugReportsMapList.size() - 1; i++) {
+			for (int i = 0; i < bugReportsMapList.size(); i++) {
 				/**
 				logger.info(String.format("Training on %d-th fold, test on %d-th fold", i, i + 1));
 				HashMap<Integer, BugReport> trainingBugReports =  bugReportsMapList.get(i);

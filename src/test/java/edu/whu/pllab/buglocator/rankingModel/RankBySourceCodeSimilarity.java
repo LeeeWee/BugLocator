@@ -41,8 +41,8 @@ public class RankBySourceCodeSimilarity {
 	}
 	
 	public static void rankBySourceCodeSimWithoutSplit() throws Exception {
-		String[] products = {"ASPECTJ", "SWT", "BIRT", "ECLIPSE_PLATFORM_UI", "TOMCAT", "JDT"};
-//		String[] products = {"JDT"};
+//		String[] products = {"ASPECTJ", "SWT", "BIRT", "ECLIPSE_PLATFORM_UI", "TOMCAT", "JDT"};
+		String[] products = {"JDT"};
 		
 		for (String product : products) {
 			logger.info("Current product: " + product);
@@ -56,18 +56,19 @@ public class RankBySourceCodeSimilarity {
 //			List<BugReport> sortedBugReports = brRepo.getSortedBugReports();
 			SourceCodeRepository codeRepo = new SourceCodeRepository();
 //			SourceCodeRepository codeRepo = new SourceCodeRepository(sortedBugReports.get(sortedBugReports.size() - 1).getCommitID());
-			codeRepo.saveSourceCodeRepoToXML(property.getCodeRepositoryXMLPath(), property.getProduct());
+//			codeRepo.saveSourceCodeRepoToXML(property.getCodeRepositoryXMLPath(), property.getProduct());
 			
 			// get valid bug reports
-			List<String> sourceCodeFilesList = FileUtil.getAllFiles(property.getSourceCodeDir(), ".java");
-			HashSet<String> sourceCodeFilesSet = new HashSet<String>();
-			int sourceCodeDirNameLength = new File(property.getSourceCodeDir()).getAbsolutePath().length();
-			for (String filePath : sourceCodeFilesList) {
-				String path = filePath.substring(sourceCodeDirNameLength + 1).replaceAll("\\\\", "/");
-				sourceCodeFilesSet.add(path);
-			}
-			HashMap<Integer, BugReport> validBugReports = getValidBugReports(brRepo.getBugReports(), sourceCodeFilesSet);
-			logger.info("Valid bug reports count: " + validBugReports.size());
+//			List<String> sourceCodeFilesList = FileUtil.getAllFiles(property.getSourceCodeDir(), ".java");
+//			HashSet<String> sourceCodeFilesSet = new HashSet<String>();
+//			int sourceCodeDirNameLength = new File(property.getSourceCodeDir()).getAbsolutePath().length();
+//			for (String filePath : sourceCodeFilesList) {
+//				String path = filePath.substring(sourceCodeDirNameLength + 1).replaceAll("\\\\", "/");
+//				sourceCodeFilesSet.add(path);
+//			}
+//			HashMap<Integer, BugReport> validBugReports = getValidBugReports(brRepo.getBugReports(), sourceCodeFilesSet);
+//			logger.info("Valid bug reports count: " + validBugReports.size());
+			HashMap<Integer, BugReport> validBugReports = brRepo.getBugReports();
 			
 			// save to xml
 //			codeRepo.saveSourceCodeRepoToXML(property.getCodeRepositoryXMLPath(), property.getProduct());

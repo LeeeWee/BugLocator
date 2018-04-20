@@ -255,7 +255,7 @@ public class StructuralSimModelGenerator {
 					features[index] = 0.0;
 				else  // if norm value doesn't equal zero, calculate field similarity
 					features[index] = Similarity.vsmSimilarityWithoutNorm(brFieldTokens, codeFieldTokens)
-							/ (brFieldNorm * codeFieldNorm);
+							/ (brFieldNorm * codeFieldNorm) * code.getLengthScore();
 				fieldSimilaritySum += features[index];
 				index++;
 			}

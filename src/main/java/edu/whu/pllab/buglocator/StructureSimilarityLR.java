@@ -28,7 +28,10 @@ public class StructureSimilarityLR {
 	
 	public static void main(String[] args) throws Exception {
 		
-		String[] products = {"ASPECTJ", "SWT", "BIRT", "ECLIPSE_PLATFORM_UI", "TOMCAT", "JDT"};
+//		String[] products = {"ASPECTJ", "SWT", "BIRT", "ECLIPSE_PLATFORM_UI", "TOMCAT", "JDT"};
+		String[] products = {"JDT"};
+		
+		double c = 0.05;
 		
 		for (String product : products) {
 			logger.info("Current product: " + product);
@@ -36,6 +39,7 @@ public class StructureSimilarityLR {
 			
 			/** record evaluate result */
 			BufferedWriter logWriter = new BufferedWriter(new FileWriter(property.getEvaluateLogPath()));
+			logWriter.write("Current c value: " + c + "\n");
 			
 			/** keep experiment result on each fold */
 			List<ExperimentResult> experimentResultList = new ArrayList<ExperimentResult>();
@@ -58,7 +62,8 @@ public class StructureSimilarityLR {
 			List<HashMap<Integer, BugReport>> bugReportsMapList = splitter.getBugReportsMapList();
 			
 			StructuralSimModelGenerator generator = new StructuralSimModelGenerator();
-			generator.setNormalize(false);
+			generator.setNormalize(true);
+			generator.setNormalizePerBugReport(true);
 			generator.setSourceCodeMap(codeRepo.getSourceCodeMap());
 			
 			// train on the k fold and test on the k+1 fold, for k < n, n is folds total number
@@ -89,7 +94,7 @@ public class StructureSimilarityLR {
 				generator.writeRankingFeatures(property.getTestFeaturesPath());
 				
 				// svm rank training and predicting
-				SVMRank.train(0.001);
+				SVMRank.train(c);
 				SVMRank.predict();
 				
 				// get test integratedScores

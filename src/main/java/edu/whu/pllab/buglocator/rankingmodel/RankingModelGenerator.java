@@ -245,8 +245,18 @@ public class RankingModelGenerator {
 			integratedScoreList.add(new IntegratedScore(code.getPath(), isModified, features));
 		}
 		// if isTest, return all integratedScores, otherwise, if isTraining, reserve top CANDIDATE_SOURCE_CODE integratedScores
-		if (!isTraining) 
+		if (!isTraining) {
+//			integratedScoreList.sort(new KeyFeatureComparator());
+//			Integer count = 0;
+//			for (IntegratedScore score : integratedScoreList) {
+//				result.add(score);
+//				count++;
+//				if (count >= CANDIDATE_SOURCE_CODE)
+//					break;
+//			}
+//			return result;
 			return integratedScoreList;
+		}
 		else {
 			// Sort and add to the final results.
 			integratedScoreList.sort(new KeyFeatureComparator());

@@ -20,8 +20,11 @@ import edu.whu.pllab.buglocator.common.TokenScore.ScoreType;
 public class TfidfVectorizer<T> {
 
 	
-	/** map doc name to temrs set */
+	/** map doc name to terms set */
 	private ConcurrentHashMap<T, HashSet<String>> docTermsMap;
+	
+	/** map doc name to docment length */
+	private ConcurrentHashMap<T, Integer> docLengthMap;
 	
 	/** <term, <doc-name, term-frequency-in-doc>> */
 	private ConcurrentHashMap<String, HashMap<T, Integer>> docTermFrequencyMap;
@@ -32,7 +35,7 @@ public class TfidfVectorizer<T> {
 	/** filter words occurring less than min-word-frequency */
 	protected int minWordFrequency;
 	
-	/** the total of number of documents encountered in the corpus */
+	/** the total number of documents encountered in the corpus */
 	private int totalNumberOfDocs;
 	
 	/** idf value table */
@@ -41,11 +44,16 @@ public class TfidfVectorizer<T> {
 	/** iterate sentence */
 	private SentenceIterator<T> iter;
 	
+	/** Lemur Tfidf vectorize parameter */
+	private double k = 1.0;
+	private double b = 0.3;
+	
 	public TfidfVectorizer(SentenceIterator<T> iter) {
 		this.iter = iter;
 		this.minWordFrequency = 0;
 		this.totalNumberOfDocs = 0;
 		docTermsMap = new ConcurrentHashMap<T, HashSet<String>>();
+		docLengthMap = new ConcurrentHashMap<T, Integer>();
 		docTermFrequencyMap = new ConcurrentHashMap<String, HashMap<T, Integer>>();
 		wordCounts = new HashMap<String, Integer>();
 	}
@@ -55,6 +63,7 @@ public class TfidfVectorizer<T> {
 		this.minWordFrequency = minWordFrequency;
 		this.totalNumberOfDocs = 0;
 		docTermsMap = new ConcurrentHashMap<T, HashSet<String>>();
+		docLengthMap = new ConcurrentHashMap<T, Integer>();
 		docTermFrequencyMap = new ConcurrentHashMap<String, HashMap<T, Integer>>();
 		wordCounts = new HashMap<String, Integer>();
 	}
@@ -106,6 +115,9 @@ public class TfidfVectorizer<T> {
 			
 			// remove label from docTermsMap
 			docTermsMap.remove(label);
+			
+			// remove label from docLenghtMap'
+			docLengthMap.remove(label);
 		}
 		
 		while (deletedSentenceIter.hasNext()) {
@@ -125,6 +137,9 @@ public class TfidfVectorizer<T> {
 			
 			// remove label from docTermsMap
 			docTermsMap.remove(label);
+
+			// remove label from docLenghtMap'
+			docLengthMap.remove(label);
 		}
 		
 		addedSentenceIter.reset();
@@ -144,6 +159,8 @@ public class TfidfVectorizer<T> {
 	public void mergeTfidf(TfidfVectorizer<T> tfidf) {
 		// merge docTermsMap
 		docTermsMap.putAll(tfidf.docTermsMap);
+		// merge docLengthMap
+		docLengthMap.putAll(tfidf.docLengthMap);
 		//merge docTermFrequencyMap
 		for (Entry<String, HashMap<T, Integer>> entry : tfidf.docTermFrequencyMap.entrySet()) {
 			if (docTermFrequencyMap.containsKey(entry.getKey()))
@@ -229,6 +246,15 @@ public class TfidfVectorizer<T> {
 		return wordCounts.keySet();
 	}
 	
+	/** Returns average document length */
+	public double averageDocLength() {
+		long lengthSum = 0;
+		for (Integer length : docLengthMap.values()) {
+			lengthSum += length;
+		}
+		return (double)lengthSum / docLengthMap.size();
+	}
+	
 	/** idf value for given word */
 	public double idfForWord(String word) {
 		if (inverseDocFrequencyTable == null) 
@@ -251,6 +277,8 @@ public class TfidfVectorizer<T> {
 			T label = labeledSentence.getKey();
 			String sentence = labeledSentence.getValue();
 			String[] tokens = sentence.split(" ");
+			
+			docLengthMap.put(label, tokens.length);
 			
 			HashMap<String, AtomicInteger> counts = new HashMap<String, AtomicInteger>();
 			for (String token : tokens) {
@@ -341,6 +369,39 @@ public class TfidfVectorizer<T> {
 		return contentTokens;
 	}
 	
+	/** Lemur Tfidf Vectorize without given average document length */
+	public HashMap<String, TokenScore> lemurTfidfVectorize(String content, double k, double b) {
+		double aveDocumentLength = averageDocLength();
+		return lemurTfidfVectorize(content, aveDocumentLength, k, b);
+	}
+	
+	/** Lemur Tfidf Vectorize with given average document length */
+	public HashMap<String, TokenScore> lemurTfidfVectorize(String content, double aveDocumentLength, double k, double b) {
+		HashMap<String, TokenScore> contentTokens = new HashMap<String, TokenScore>();
+		String[] tokens = content.split(" ");
+		HashMap<String, Integer> tokensCount = new HashMap<String, Integer>();
+		int documentLength = 0;
+		// get tokens term frequency
+		for (String token : tokens) {
+			if ((token = token.trim()).equals(""))
+				continue;
+			if (!tokensCount.containsKey(token))
+				tokensCount.put(token, 1);
+			else
+				tokensCount.put(token, tokensCount.get(token) + 1);
+			documentLength++;
+		}
+		for (Entry<String, Integer> tokenEntry : tokensCount.entrySet()) {
+			String token = tokenEntry.getKey();
+			double okapiTf = okapiTfForWord(tokenEntry.getValue(), documentLength, aveDocumentLength, k, b);
+			double smoothedIdf = smoothedIdfForWord(token);
+			double tfidf = MathUtils.tfidf(okapiTf, smoothedIdf);
+			TokenScore tokenScore = new TokenScore(token, okapiTf, smoothedIdf, tfidf);
+			contentTokens.put(token, tokenScore);
+		}
+		return contentTokens;
+	}
+	
 	/** calculate tokens content norm for contentTokens map */
 	public double calculateContentNorm(HashMap<String, TokenScore> contentTokens) {
 		double contentNorm = 0.0;
@@ -349,9 +410,7 @@ public class TfidfVectorizer<T> {
 		}
 		return Math.sqrt(contentNorm);
 	}
-	
 
-	
     public double tfForWord(long wordCount, long documentLength) {
         return (double) wordCount / (double) documentLength;
     }
@@ -367,5 +426,22 @@ public class TfidfVectorizer<T> {
     public double logTfForWord(long wordCount, double aveWordCount) {
     	return (1 + Math.log(wordCount)) / (1 + Math.log(aveWordCount));
     }
+    
+    public double okapiTfForWord(long wordCount, long documentLength, double aveDocumentLength, double k, double b) {
+    	return (k * wordCount / (wordCount + k * (1 - b + b * documentLength / aveDocumentLength)));
+    }
+    
+    public double smoothedIdfForWord(String word) {
+    	return Math.log((totalNumberOfDocs() + 1) / (docAppearedIn(word) + 0.5));
+    }
+
+
+	public void setK(double k) {
+		this.k = k;
+	}
+
+	public void setB(double b) {
+		this.b = b;
+	}
 
 }

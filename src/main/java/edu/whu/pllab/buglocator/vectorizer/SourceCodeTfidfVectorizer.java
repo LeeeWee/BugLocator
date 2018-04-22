@@ -25,7 +25,7 @@ public class SourceCodeTfidfVectorizer {
 	private TfidfVectorizer<String> tfidf;
 	private HashMap<String, SourceCode> sourceCodeMap;
 	private ScoreType tokenScoreType = ScoreType.WFIDF;
-	
+
 	public SourceCodeTfidfVectorizer() {
 		useStructuredInformation = Property.USE_STRUCTURED_INFORMATION;
 	}
@@ -144,5 +144,5 @@ public class SourceCodeTfidfVectorizer {
 	public TfidfVectorizer<String> getTfidf() {
 		return tfidf;
 	}
-	
+
 }

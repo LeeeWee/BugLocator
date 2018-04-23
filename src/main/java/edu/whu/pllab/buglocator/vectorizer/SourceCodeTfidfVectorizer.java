@@ -17,7 +17,7 @@ import edu.whu.pllab.buglocator.common.TokenScore.ScoreType;
 
 public class SourceCodeTfidfVectorizer {
 	
-	private static final Logger logger = LoggerFactory.getLogger(BugReportTfidfVectorizer.class);
+	private static final Logger logger = LoggerFactory.getLogger(SourceCodeTfidfVectorizer.class);
 	
 	/** whether use structured information */
 	private boolean useStructuredInformation;

@@ -9,7 +9,6 @@ import java.util.Properties;
 
 public class Property {
 	
-	private final static String TIME_STR = new SimpleDateFormat("yyyyMMddHHmmss").format(new Date());
 	
 	private final static String BR_TFIDF_PATH = "bugReport.tfidf";
 	private final static String CODE_TFIDF_PATH = "sourceCode.tfidf";
@@ -22,7 +21,6 @@ public class Property {
 	private final static String PREDICTIONS_PATH = "predictions";
 	private final static String CODE_REPO_XML_PATH = "codeRepository.xml";
 	private final static String FEATURES_EXTREMUM_PATH = "features.params";
-	private final static String EVALUATE_LOG_PATH = "evaluate_" + TIME_STR + ".log";
 	
 	public final static int THREAD_COUNT = Runtime.getRuntime().availableProcessors();
 	public final static String STOPWORDS_PATH = Property.readProperty("STOPWORDS_PATH");
@@ -108,7 +106,9 @@ public class Property {
 		String predictionsPath = new File(workingDir, PREDICTIONS_PATH).getAbsolutePath();
 		String codeRepositoryXMLPath = new File(workingDir, CODE_REPO_XML_PATH).getAbsolutePath();
 		String featuresExtremumPath = new File(workingDir, FEATURES_EXTREMUM_PATH).getAbsolutePath();
-		String evaluateLogPath = new File(workingDir, EVALUATE_LOG_PATH).getAbsolutePath();
+		// append time string to evaluateLogPath
+		String timeStr = new SimpleDateFormat("yyyyMMddHHmmss").format(new Date());
+		String evaluateLogPath = new File(workingDir, "evaluate_" + timeStr + ".log").getAbsolutePath();
 		int splitNum = 10;
 		if (Property.readProperty(targetProduct + "_" + "SPLIT_NUM") != null)
 			splitNum = Integer.parseInt(Property.readProperty(targetProduct + "_" + "SPLIT_NUM"));

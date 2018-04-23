@@ -21,6 +21,11 @@ public class IntegratedScore {
 		this.features = features;
 	}
 	
+	public IntegratedScore(boolean isModified, double[] features) {
+		this.isModified = isModified;
+		this.features = features;
+	}
+	
 	public double getScore() {
 		if (isModified)
 			return MODIFIED_SCORE + features[KEY_INDEX];

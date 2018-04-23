@@ -44,7 +44,7 @@ import edu.whu.pllab.buglocator.utils.Stemmer;
 
 public class SourceCodeRepository {
 
-	private static final Logger logger = LoggerFactory.getLogger(BugReportRepository.class);
+	private static final Logger logger = LoggerFactory.getLogger(SourceCodeRepository.class);
 
 	/** source code repository commit version */
 	private String version;

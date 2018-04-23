@@ -17,6 +17,7 @@ import edu.whu.pllab.buglocator.evaluation.Evaluator;
 import edu.whu.pllab.buglocator.rankingmodel.IntegratedScore;
 import edu.whu.pllab.buglocator.rankingmodel.SVMRank;
 import edu.whu.pllab.buglocator.rankingmodel.StructuralSimModelGenerator;
+import edu.whu.pllab.buglocator.tests.RankerTest;
 import edu.whu.pllab.buglocator.tests.SimpleEvaluate;
 import edu.whu.pllab.buglocator.utils.BugReportsSplitter;
 import edu.whu.pllab.buglocator.vectorizer.BugReportTfidfVectorizer;
@@ -24,14 +25,16 @@ import edu.whu.pllab.buglocator.vectorizer.SourceCodeTfidfVectorizer;
 
 public class StructureSimilarityLR {
 	
-	private static final Logger logger = LoggerFactory.getLogger(BugLocator.class);
+	private static final Logger logger = LoggerFactory.getLogger(StructureSimilarityLR.class);
 	
 	public static void main(String[] args) throws Exception {
 		
-//		String[] products = {"ASPECTJ", "SWT", "BIRT", "ECLIPSE_PLATFORM_UI", "TOMCAT", "JDT"};
-		String[] products = {"JDT"};
+		String[] products = {"ASPECTJ", "SWT", "BIRT", "ECLIPSE_PLATFORM_UI", "TOMCAT", "JDT"};
 		
-		double c = 0.05;
+//		double[] cArrays = new double[]{ 0.001, 0.005, 0.01, 0.05, 0.1, 0.25, 0.5, 1.0, 2.0, 5.0, 10.0, 
+//				20.0, 50.0, 100.0, 200.0, 500.0};
+		double c = 0.001;
+//		for (double c : cArrays) {
 		
 		for (String product : products) {
 			logger.info("Current product: " + product);
@@ -62,8 +65,8 @@ public class StructureSimilarityLR {
 			List<HashMap<Integer, BugReport>> bugReportsMapList = splitter.getBugReportsMapList();
 			
 			StructuralSimModelGenerator generator = new StructuralSimModelGenerator();
-			generator.setNormalize(true);
-			generator.setNormalizePerBugReport(true);
+			generator.setNormalize(false);
+			generator.setNormalizePerBugReport(false);
 			generator.setSourceCodeMap(codeRepo.getSourceCodeMap());
 			
 			// train on the k fold and test on the k+1 fold, for k < n, n is folds total number
@@ -93,14 +96,28 @@ public class StructureSimilarityLR {
 				generator.generate(false);
 				generator.writeRankingFeatures(property.getTestFeaturesPath());
 				
+				/**
 				// svm rank training and predicting
 				SVMRank.train(c);
 				SVMRank.predict();
+				*/
+				
+				// ranknet training and predicting
+				RankerTest ranker = new RankerTest(RankerTest.RANKNET);
+				ranker.rankNetTrain();
+				ranker.evaluate();
+				
+				/**
+				// LambdaMart training and predicting 
+				RankerTest.lambdaMARTTrain();
+				RankerTest.evaluate(RankerTest.LAMBDAMART);
+				*/
 				
 				// get test integratedScores
 				HashMap<BugReport, List<IntegratedScore>> testIntegratedScores = generator.getFinals();
 				//evaluate
 				Evaluator evaluator = new Evaluator(testIntegratedScores);
+				evaluator.setPredictionsPath(ranker.getPredictionsPath());
 				evaluator.loadPredictionsResult();
 				evaluator.evaluate();
 				
@@ -110,16 +127,16 @@ public class StructureSimilarityLR {
 				logWriter.write(evaluator.getExperimentResult().toString() + "\n\n");
 				logWriter.flush();
 				
-				SimpleEvaluate simpleEvaluate = new SimpleEvaluate(property.getSVMRankModelPath());
-				logWriter.write("Evaluating on training data\n");
-				System.out.println("Evaluating on training data\n");
-				logWriter.write(simpleEvaluate.evaluate(property.getTrainingFeaturesPath()));
-				logWriter.write("Evaluating on test data for direct adding\n");
-				System.out.println("Evaluating on test data for direct adding\n");
-				logWriter.write(simpleEvaluate.directAddingEvaluate(property.getTestFeaturesPath()));
-				logWriter.write("Evaluating on training data for direct adding\n");
-				System.out.println("Evaluating on training data for direct adding\n");
-				logWriter.write(simpleEvaluate.directAddingEvaluate(property.getTrainingFeaturesPath()));
+//				SimpleEvaluate simpleEvaluate = new SimpleEvaluate(property.getSVMRankModelPath());
+//				logWriter.write("Evaluating on training data\n");
+//				System.out.println("Evaluating on training data\n");
+//				logWriter.write(simpleEvaluate.evaluate(property.getTrainingFeaturesPath()));
+//				logWriter.write("Evaluating on test data for direct adding\n");
+//				System.out.println("Evaluating on test data for direct adding\n");
+//				logWriter.write(simpleEvaluate.directAddingEvaluate(property.getTestFeaturesPath()));
+//				logWriter.write("Evaluating on training data for direct adding\n");
+//				System.out.println("Evaluating on training data for direct adding\n");
+//				logWriter.write(simpleEvaluate.directAddingEvaluate(property.getTrainingFeaturesPath()));
 				
 			}
 			
@@ -154,7 +171,8 @@ public class StructureSimilarityLR {
 			logWriter.write(builder.toString());
 			
 			logWriter.close();
-					
 		}
+		
+//		}
 	}
 }

@@ -286,11 +286,12 @@ public class RankerTest {
 	}
 	
 	public static void main(String[] args) throws Exception {
-//		Property property = Property.loadInstance("ASPECTJ");
-//		String directory = "D:\\data\\working\\AspectJ\\data_folder";
-//		foldsTest(LAMBDAMART, directory, property.getEvaluateLogPath());
-		String fold = "D:\\data\\working\\AspectJ\\data_folder\\folder#1";
-		foldTest(1, fold);
+		String[] products = {"ASPECTJ", "SWT", "BIRT", "ECLIPSE_PLATFORM_UI", "TOMCAT", "JDT"};
+		for (String product : products) {
+			Property property = Property.loadInstance(product);
+			String directory = new File(property.getWorkingDir(), "data_folder").getAbsolutePath();
+			foldsTest(COORDINATE_ASCENT, directory, property.getEvaluateLogPath());
+		}
 	}
 	
 	

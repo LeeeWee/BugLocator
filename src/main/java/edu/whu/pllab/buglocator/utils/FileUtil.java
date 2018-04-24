@@ -294,7 +294,7 @@ public class FileUtil {
 		for (int i = 0; i < stringList.size(); i++) {
 			texts.add(stringList.get(i));
 			n++;
-			if (n > averN && core < cores) {
+			if (n >= averN && core < cores - 1) {
 				n = 0;
 				core++;
 				texts = result.get(core);

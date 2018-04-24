@@ -71,6 +71,7 @@ public class SimpleEvaluator {
 					if (!integratedScoreList.isEmpty()) 
 						intergratedScores.add(integratedScoreList);
 					integratedScoreList = new ArrayList<IntegratedScore>();
+					currentQid = qid;
 				}
 				integratedScoreList.add(integratedScore);
 			}
@@ -234,6 +235,10 @@ public class SimpleEvaluator {
 		this.predictionsPath = predictionsPath;
 	}
 	
-	
+	public ExperimentResult getExperimentResult() {
+		if (experimentResult == null)
+			evaluate();
+		return experimentResult;
+	}
 
 }

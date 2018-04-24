@@ -42,7 +42,7 @@ public class StructureSimilarityLR {
 			
 			/** record evaluate result */
 			BufferedWriter logWriter = new BufferedWriter(new FileWriter(property.getEvaluateLogPath()));
-			logWriter.write("Current c value: " + c + "\n");
+//			logWriter.write("Current c value: " + c + "\n");
 			
 			/** keep experiment result on each fold */
 			List<ExperimentResult> experimentResultList = new ArrayList<ExperimentResult>();

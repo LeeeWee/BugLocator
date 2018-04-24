@@ -26,16 +26,19 @@ public class RankerTest {
 	private static final Logger logger = LoggerFactory.getLogger(RankerTest.class);
 	
 	public static final int RANKNET = 1;
+	public static final int COORDINATE_ASCENT = 4;
 	public static final int LAMBDAMART = 6;
 	
 	public static final String TRAING_DATA_PATH = "train.dat";
 	public static final String TEST_DATA_PATH = "test.dat";
 	public static final String RANKNET_MODEL_PATH = "RankNet.model";
+	public static final String COORASCENT_MODEL_PATH = "CoorAscent.model";
 	public static final String LAMBDAMART_MODEL_PATH = "LambdaMART.model";
 	public static final String RANKNET_PREDICTIONS_PATH = "RankNet.predictions";
-	public static final String RANKNET_TRAIN_PREDICTIONS_PATH = "RankNet_train.predictions";
+	public static final String COORASCENT_PREDICTIONS_PATH = "CoorAscent.predictions";
 	public static final String LAMBDAMART_PREDICTIONS_PATH = "LambdaMART.predictions";
-	public static final String LAMBDAMART_TRAIN_PREDICTIONS_PATH = "LambdaMART_train.predictions";
+	
+	public static final String TRAIN_PREDICTIONS_PATH = "train.predictions";
 	
 	
 	private int rankerType; 
@@ -54,6 +57,7 @@ public class RankerTest {
 		workingDir = property.getWorkingDir();
 		trainingFeaturesPath = property.getTrainingFeaturesPath();
 		testFeaturesPath = property.getTestFeaturesPath();
+		trainPredictionsPath = new File(workingDir, TRAIN_PREDICTIONS_PATH).getAbsolutePath();
 		setModelPredictionsPath();
 	}
 	
@@ -62,6 +66,7 @@ public class RankerTest {
 		this.workingDir = workingDir;
 		trainingFeaturesPath = new File(workingDir, TRAING_DATA_PATH).getAbsolutePath();
 		testFeaturesPath = new File(workingDir, TEST_DATA_PATH).getAbsolutePath();
+		trainPredictionsPath = new File(workingDir, TRAIN_PREDICTIONS_PATH).getAbsolutePath();
 		setModelPredictionsPath();
 	}
 	
@@ -70,12 +75,14 @@ public class RankerTest {
 		case RANKNET:
 			savedModelPath = new File(workingDir, RANKNET_MODEL_PATH).getAbsolutePath();
 			predictionsPath = new File(workingDir, RANKNET_PREDICTIONS_PATH).getAbsolutePath();
-			trainPredictionsPath = new File(workingDir, RANKNET_TRAIN_PREDICTIONS_PATH).getAbsolutePath();
+			break;
+		case COORDINATE_ASCENT:
+			savedModelPath = new File(workingDir, COORASCENT_MODEL_PATH).getAbsolutePath();
+			predictionsPath = new File(workingDir, COORASCENT_PREDICTIONS_PATH).getAbsolutePath();
 			break;
 		case LAMBDAMART:
 			savedModelPath = new File(workingDir, LAMBDAMART_MODEL_PATH).getAbsolutePath();
 			predictionsPath = new File(workingDir, LAMBDAMART_PREDICTIONS_PATH).getAbsolutePath();
-			trainPredictionsPath = new File(workingDir, LAMBDAMART_TRAIN_PREDICTIONS_PATH).getAbsolutePath();
 			break;
 		default:
 			savedModelPath = new File(workingDir, RANKNET_MODEL_PATH).getAbsolutePath();
@@ -87,6 +94,9 @@ public class RankerTest {
 		switch (rankerType) {
 		case RANKNET:
 			rankNetTrain();
+			break;
+		case COORDINATE_ASCENT:
+			coordinateAscentTrain();
 			break;
 		case LAMBDAMART:
 			lambdaMARTTrain();
@@ -110,7 +120,7 @@ public class RankerTest {
 	}
 	
 	public void lambdaMARTTrain() {
-		String trainMetric = "NDCG@5";
+		String trainMetric = "NDCG@10";
 		// LambdaMART-specific parameters
 		String tree = "200";
 		String leaf = "10";
@@ -121,6 +131,18 @@ public class RankerTest {
 		
 		String[] args = new String[] {"-train", trainingFeaturesPath, "-ranker", "6", "-metric2t", trainMetric, "-save", savedModelPath,
 				"-tree", tree, "-leaf", leaf, "-shrinkage", shrinkage, "-tc", tc, "-mls", mls, "-estop", estop};
+		Evaluator.main(args);
+	}
+	
+	public void coordinateAscentTrain() {
+		String trainMetric = "NDCG@10";
+		// Coordinate Ascent-specific parameters
+		String nRestart = "3";
+		String iteration  = "25";
+		String tolerance = "0.001";
+		
+		String[] args = new String[] {"-train", trainingFeaturesPath, "-ranker", "4", "-metric2t", trainMetric, "-save", savedModelPath,
+				"-r", nRestart, "-i", iteration, "-tolerance", tolerance};
 		Evaluator.main(args);
 	}
 	
@@ -267,7 +289,7 @@ public class RankerTest {
 //		Property property = Property.loadInstance("ASPECTJ");
 //		String directory = "D:\\data\\working\\AspectJ\\data_folder";
 //		foldsTest(LAMBDAMART, directory, property.getEvaluateLogPath());
-		String fold = "D:\\data\\working\\AspectJ\\data_folder\\folder#0";
+		String fold = "D:\\data\\working\\AspectJ\\data_folder\\folder#1";
 		foldTest(1, fold);
 	}
 	

@@ -272,7 +272,7 @@ public class RankerTest {
 	public static ExperimentResult foldTest(int rankerType, String foldPath) throws Exception {
 		
 		RankerTest ranker = new RankerTest(rankerType, foldPath);
-		ranker.train();
+//		ranker.train();
 		ranker.evaluate();
 		ranker.trainingDataEvaluate();
 		SimpleEvaluator evaluator = new SimpleEvaluator(ranker.testFeaturesPath, ranker.predictionsPath);
@@ -289,8 +289,8 @@ public class RankerTest {
 //		Property property = Property.loadInstance("ASPECTJ");
 //		String directory = "D:\\data\\working\\AspectJ\\data_folder";
 //		foldsTest(LAMBDAMART, directory, property.getEvaluateLogPath());
-		String fold = "D:\\data\\working\\AspectJ\\data_folder\\folder#1";
-		foldTest(1, fold);
+		String fold = "D:\\data\\working\\AspectJ\\data_folder\\folder#0";
+		foldTest(COORDINATE_ASCENT, fold);
 	}
 	
 	

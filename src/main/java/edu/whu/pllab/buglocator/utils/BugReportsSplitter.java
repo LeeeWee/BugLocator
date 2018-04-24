@@ -51,7 +51,7 @@ public class BugReportsSplitter {
 			BugReport bugReport = bugReportsList.get(j);
 			subBugReportMap.put(bugReport.getBugID(), bugReport);
 			i++;
-			if (i > averSize && index < n) {
+			if (i >= averSize && index < n - 1) {
 				i = 0;
 				index++;
 				subBugReportMap = bugReportsMapList.get(index);

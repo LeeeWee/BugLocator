@@ -75,6 +75,8 @@ public class SimpleEvaluator {
 				}
 				integratedScoreList.add(integratedScore);
 			}
+			if (!integratedScoreList.isEmpty())
+				intergratedScores.add(integratedScoreList);
 			reader.close();
 		} catch (Exception e) {
 			e.printStackTrace();

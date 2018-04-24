@@ -272,7 +272,7 @@ public class RankerTest {
 	public static ExperimentResult foldTest(int rankerType, String foldPath) throws Exception {
 		
 		RankerTest ranker = new RankerTest(rankerType, foldPath);
-		ranker.train();
+//		ranker.train();
 		ranker.evaluate();
 		ranker.trainingDataEvaluate();
 		SimpleEvaluator evaluator = new SimpleEvaluator(ranker.testFeaturesPath, ranker.predictionsPath);
@@ -286,12 +286,16 @@ public class RankerTest {
 	}
 	
 	public static void main(String[] args) throws Exception {
-		String[] products = {"ASPECTJ", "SWT", "BIRT", "ECLIPSE_PLATFORM_UI", "TOMCAT", "JDT"};
-		for (String product : products) {
-			Property property = Property.loadInstance(product);
-			String directory = new File(property.getWorkingDir(), "data_folder").getAbsolutePath();
-			foldsTest(COORDINATE_ASCENT, directory, property.getEvaluateLogPath());
-		}
+		
+//		String[] products = {"ASPECTJ", "SWT", "BIRT", "ECLIPSE_PLATFORM_UI", "TOMCAT", "JDT"};
+//		for (String product : products) {
+//			Property property = Property.loadInstance(product);
+//			String directory = new File(property.getWorkingDir(), "data_folder").getAbsolutePath();
+//			foldsTest(COORDINATE_ASCENT, directory, property.getEvaluateLogPath());
+//		}
+
+		String fold = "D:\\data\\working\\AspectJ\\data_folder\\folder#0";
+		foldTest(COORDINATE_ASCENT, fold);
 	}
 	
 	

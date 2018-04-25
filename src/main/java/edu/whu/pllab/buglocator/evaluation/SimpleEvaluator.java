@@ -11,7 +11,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import edu.whu.pllab.buglocator.Property;
-import edu.whu.pllab.buglocator.common.ExperimentResult;
 import edu.whu.pllab.buglocator.rankingmodel.IntegratedScore;
 
 public class SimpleEvaluator {

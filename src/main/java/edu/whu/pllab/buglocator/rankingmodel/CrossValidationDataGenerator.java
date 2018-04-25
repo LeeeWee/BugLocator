@@ -65,9 +65,9 @@ public class CrossValidationDataGenerator {
 			HashMap<Integer, BugReport> testBugReports = bugReportsMapList.get(i); 
 			
 			// generate training data
-			generator.setTrainingBugReportsMap(trainingBugReports);
-			generator.generate(true);
-			generator.writeRankingFeatures(new File(folder, TRAIN_DATA_PATH).getAbsolutePath());
+//			generator.setTrainingBugReportsMap(trainingBugReports);
+//			generator.generate(true);
+//			generator.writeRankingFeatures(new File(folder, TRAIN_DATA_PATH).getAbsolutePath());
 			// generate test data
 			generator.setTestBugReportsMap(testBugReports);
 			generator.generate(false);

@@ -1,4 +1,6 @@
-package edu.whu.pllab.buglocator.common;
+package edu.whu.pllab.buglocator.evaluation;
+
+import java.util.List;
 
 public class ExperimentResult {
 
@@ -49,6 +51,31 @@ public class ExperimentResult {
 		builder.append(String.format("MAP: %f \n", MAP));
 		builder.append(String.format("MRR: %f", MRR));
 		return builder.toString();
+	}
+	
+	
+	// pool the bug reports from all test folds and compute the overall system performance
+	public static ExperimentResult pollExperimentResult(List<ExperimentResult> experimentResultList) {
+		int testDataSize = 0;
+		int[] topN = new int[ExperimentResult.N_ARRAY.length];
+		double sumOfRR = 0.0;
+		double sumOfAP = 0.0;
+		for (ExperimentResult result : experimentResultList) {
+			testDataSize += result.getTestDataSize();
+			for (int i = 0; i < result.getTopN().length; i++) {
+				topN[i] += result.getTopN()[i];
+			}
+			sumOfRR += result.getSumOfRR();
+			sumOfAP += result.getSumOfAP();
+		}
+		double MRR = sumOfRR / testDataSize;
+		double MAP = sumOfAP / testDataSize;
+		double[] topNRate = new double[topN.length];
+		for (int j = 0; j < topN.length; j++) {
+			topNRate[j] = (double) topN[j] / testDataSize;
+		}
+		ExperimentResult finalResult = new ExperimentResult(testDataSize, topN, topNRate, sumOfRR, MRR, sumOfAP, MAP);
+		return finalResult;
 	}
 	
 	public int getTestDataSize() {

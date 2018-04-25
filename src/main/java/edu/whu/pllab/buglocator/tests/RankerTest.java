@@ -1,8 +1,10 @@
 package edu.whu.pllab.buglocator.tests;
 
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -18,7 +20,7 @@ import ciir.umass.edu.learning.RankList;
 import ciir.umass.edu.learning.Ranker;
 import ciir.umass.edu.learning.RankerFactory;
 import edu.whu.pllab.buglocator.Property;
-import edu.whu.pllab.buglocator.common.ExperimentResult;
+import edu.whu.pllab.buglocator.evaluation.ExperimentResult;
 import edu.whu.pllab.buglocator.evaluation.SimpleEvaluator;
 
 public class RankerTest {
@@ -208,17 +210,17 @@ public class RankerTest {
 		this.predictionsPath = predictionsPath;
 	}
 	
-	public static void foldsTest(int rankerType, String direcotry, String output) throws Exception {
+	public static void foldsTest(int rankerType, String directory, String output) throws Exception {
 		// keep experiment result on each fold 
 		List<ExperimentResult> experimentResultList = new ArrayList<ExperimentResult>();
 		
 		BufferedWriter logWriter = null;
 		if (output != null) 
 			logWriter = new BufferedWriter(new FileWriter(output));
-		String[] foldsName = new File(direcotry).list();
+		String[] foldsName = new File(directory).list();
 		String[] foldsPath = new String[foldsName.length];
 		for (int i = 0; i < foldsName.length; i++) {
-			foldsPath[i] = new File(direcotry, foldsName[i]).getAbsolutePath();
+			foldsPath[i] = new File(directory, foldsName[i]).getAbsolutePath();
 		}
 		// test fold#i
 		for (int i = 0; i < foldsPath.length; i++) {
@@ -236,26 +238,7 @@ public class RankerTest {
 			}
 		}
 		
-		// pool the bug reports from all test folds and compute the overall system performance
-		int testDataSize = 0;
-		int[] topN = new int[ExperimentResult.N_ARRAY.length];
-		double sumOfRR = 0.0;
-		double sumOfAP = 0.0;
-		for (ExperimentResult result : experimentResultList) {
-			testDataSize += result.getTestDataSize();
-			for (int i = 0; i < result.getTopN().length; i++) {
-				topN[i] += result.getTopN()[i];
-			}
-			sumOfRR += result.getSumOfRR();
-			sumOfAP += result.getSumOfAP();
-		}
-		double MRR = sumOfRR / testDataSize;
-		double MAP = sumOfAP / testDataSize;
-		double[] topNRate = new double[topN.length];
-		for (int j = 0; j < topN.length; j++) {
-			topNRate[j] = (double) topN[j] / testDataSize;
-		}
-		ExperimentResult finalResult = new ExperimentResult(testDataSize, topN, topNRate, sumOfRR, MRR, sumOfAP, MAP);
+		ExperimentResult finalResult = ExperimentResult.pollExperimentResult(experimentResultList);
 		
 		StringBuilder builder = new StringBuilder();
 		builder.append("\n");
@@ -272,7 +255,7 @@ public class RankerTest {
 	public static ExperimentResult foldTest(int rankerType, String foldPath) throws Exception {
 		
 		RankerTest ranker = new RankerTest(rankerType, foldPath);
-//		ranker.train();
+		ranker.train();
 		ranker.evaluate();
 		ranker.trainingDataEvaluate();
 		SimpleEvaluator evaluator = new SimpleEvaluator(ranker.testFeaturesPath, ranker.predictionsPath);
@@ -285,17 +268,18 @@ public class RankerTest {
 		return evaluator.getExperimentResult();
 	}
 	
+	
 	public static void main(String[] args) throws Exception {
 		
-//		String[] products = {"ASPECTJ", "SWT", "BIRT", "ECLIPSE_PLATFORM_UI", "TOMCAT", "JDT"};
-//		for (String product : products) {
-//			Property property = Property.loadInstance(product);
-//			String directory = new File(property.getWorkingDir(), "data_folder").getAbsolutePath();
-//			foldsTest(COORDINATE_ASCENT, directory, property.getEvaluateLogPath());
-//		}
+		String[] products = {"ASPECTJ", "SWT", "BIRT", "ECLIPSE_PLATFORM_UI", "TOMCAT", "JDT"};
+		for (String product : products) {
+			Property property = Property.loadInstance(product);
+			String directory = new File(property.getWorkingDir(), "data_folder").getAbsolutePath();
+			foldsTest(COORDINATE_ASCENT, directory, property.getEvaluateLogPath());
+		}
 
-		String fold = "D:\\data\\working\\AspectJ\\data_folder\\folder#0";
-		foldTest(COORDINATE_ASCENT, fold);
+//		String fold = "D:\\data\\working\\AspectJ\\data_folder\\folder#0";
+//		foldTest(COORDINATE_ASCENT, fold);
 	}
 	
 	

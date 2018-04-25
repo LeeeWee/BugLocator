@@ -204,16 +204,16 @@ public class StructuralSimModelGenerator {
 		
 		// if isTest, return all integratedScores, otherwise, if isTraining, reserve top CANDIDATE_SOURCE_CODE integratedScores
 		if (!isTraining) {
-			integratedScoreList.sort(new KeyFeatureComparator());
-			Integer count = 0;
-			for (IntegratedScore score : integratedScoreList) {
-				result.add(score);
-				count++;
-				if (count >= CANDIDATE_SOURCE_CODE)
-					break;
-			}
-			return result;
-//			return integratedScoreList;
+//			integratedScoreList.sort(new KeyFeatureComparator());
+//			Integer count = 0;
+//			for (IntegratedScore score : integratedScoreList) {
+//				result.add(score);
+//				count++;
+//				if (count >= CANDIDATE_SOURCE_CODE)
+//					break;
+//			}
+//			return result;
+			return integratedScoreList;
 		}
 		else {
 			// Sort and add to the final results.

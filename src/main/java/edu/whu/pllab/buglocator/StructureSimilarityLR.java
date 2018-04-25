@@ -11,9 +11,9 @@ import org.slf4j.LoggerFactory;
 
 import edu.whu.pllab.buglocator.common.BugReport;
 import edu.whu.pllab.buglocator.common.BugReportRepository;
-import edu.whu.pllab.buglocator.common.ExperimentResult;
 import edu.whu.pllab.buglocator.common.SourceCodeRepository;
 import edu.whu.pllab.buglocator.evaluation.Evaluator;
+import edu.whu.pllab.buglocator.evaluation.ExperimentResult;
 import edu.whu.pllab.buglocator.rankingmodel.IntegratedScore;
 import edu.whu.pllab.buglocator.rankingmodel.SVMRank;
 import edu.whu.pllab.buglocator.rankingmodel.StructuralSimModelGenerator;

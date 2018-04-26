@@ -105,7 +105,7 @@ public class StructureSimilarityLR {
 				// ranknet training and predicting
 				RankerTest ranker = new RankerTest(RankerTest.RANKNET);
 				ranker.rankNetTrain();
-				ranker.evaluate();
+				ranker.predict();
 				
 				/**
 				// LambdaMart training and predicting 

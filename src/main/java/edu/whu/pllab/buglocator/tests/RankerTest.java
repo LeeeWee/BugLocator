@@ -4,9 +4,9 @@ package edu.whu.pllab.buglocator.tests;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -16,9 +16,13 @@ import org.slf4j.LoggerFactory;
 import ciir.umass.edu.eval.Evaluator;
 import ciir.umass.edu.features.FeatureManager;
 import ciir.umass.edu.learning.DataPoint;
+import ciir.umass.edu.learning.RANKER_TYPE;
 import ciir.umass.edu.learning.RankList;
 import ciir.umass.edu.learning.Ranker;
 import ciir.umass.edu.learning.RankerFactory;
+import ciir.umass.edu.learning.RankerTrainer;
+import ciir.umass.edu.metric.MetricScorer;
+import ciir.umass.edu.metric.MetricScorerFactory;
 import edu.whu.pllab.buglocator.Property;
 import edu.whu.pllab.buglocator.evaluation.ExperimentResult;
 import edu.whu.pllab.buglocator.evaluation.SimpleEvaluator;
@@ -30,15 +34,21 @@ public class RankerTest {
 	public static final int RANKNET = 1;
 	public static final int COORDINATE_ASCENT = 4;
 	public static final int LAMBDAMART = 6;
+	public static final int LINEAR_REGRESSION = 9;
+	public static final int SVMRANK = 10;
 	
 	public static final String TRAING_DATA_PATH = "train.dat";
 	public static final String TEST_DATA_PATH = "test.dat";
 	public static final String RANKNET_MODEL_PATH = "RankNet.model";
 	public static final String COORASCENT_MODEL_PATH = "CoorAscent.model";
 	public static final String LAMBDAMART_MODEL_PATH = "LambdaMART.model";
+	public static final String LINEAR_REGRESSION_MODEL_PATH = "LinearRegression.model";
+	public static final String SVMRANK_MODEL_PATH = "SVMRank.model";
 	public static final String RANKNET_PREDICTIONS_PATH = "RankNet.predictions";
 	public static final String COORASCENT_PREDICTIONS_PATH = "CoorAscent.predictions";
 	public static final String LAMBDAMART_PREDICTIONS_PATH = "LambdaMART.predictions";
+	public static final String LINEAR_REGRESSION_PREDICTIONS_PATH = "LinearRegression.predictions";
+	public static final String SVMRANK_PREDICTIONS_PATH = "SVMRank.predictions";
 	
 	public static final String TRAIN_PREDICTIONS_PATH = "train.predictions";
 	
@@ -86,6 +96,14 @@ public class RankerTest {
 			savedModelPath = new File(workingDir, LAMBDAMART_MODEL_PATH).getAbsolutePath();
 			predictionsPath = new File(workingDir, LAMBDAMART_PREDICTIONS_PATH).getAbsolutePath();
 			break;
+		case LINEAR_REGRESSION:
+			savedModelPath = new File(workingDir, LINEAR_REGRESSION_MODEL_PATH).getAbsolutePath();
+			predictionsPath = new File(workingDir, LINEAR_REGRESSION_PREDICTIONS_PATH).getAbsolutePath();
+			break;
+		case SVMRANK:
+			savedModelPath = new File(workingDir, SVMRANK_MODEL_PATH).getAbsolutePath();
+			predictionsPath = new File(workingDir, SVMRANK_PREDICTIONS_PATH).getAbsolutePath();
+			break;
 		default:
 			savedModelPath = new File(workingDir, RANKNET_MODEL_PATH).getAbsolutePath();
 			predictionsPath = new File(workingDir, RANKNET_PREDICTIONS_PATH).getAbsolutePath();
@@ -103,6 +121,12 @@ public class RankerTest {
 		case LAMBDAMART:
 			lambdaMARTTrain();
 			break;
+		case LINEAR_REGRESSION:
+			linearRegressionTrain();
+			break;
+		case SVMRANK:
+			svmRankTrain();
+			break;
 		default:
 			rankNetTrain();
 		}
@@ -111,9 +135,9 @@ public class RankerTest {
 	public void rankNetTrain() {
 		String trainMetric = "NDCG@10";
 		// RankNet-specific parameters
-		String epoch = "200";
+		String epoch = "100";
 		String layer = "2";
-		String node = "10";
+		String node = "15";
 		String lr = "0.00005";
 		
 		String[] args = new String[] {"-train", trainingFeaturesPath, "-ranker", "1", "-metric2t", trainMetric, "-save", savedModelPath,
@@ -137,10 +161,10 @@ public class RankerTest {
 	}
 	
 	public void coordinateAscentTrain() {
-		String trainMetric = "NDCG@10";
+		String trainMetric = "MAP";
 		// Coordinate Ascent-specific parameters
-		String nRestart = "3";
-		String iteration  = "25";
+		String nRestart = "10";
+		String iteration  = "30";
 		String tolerance = "0.001";
 		
 		String[] args = new String[] {"-train", trainingFeaturesPath, "-ranker", "4", "-metric2t", trainMetric, "-save", savedModelPath,
@@ -148,49 +172,142 @@ public class RankerTest {
 		Evaluator.main(args);
 	}
 	
-	public void evaluate() {
-		RankerFactory rFact = new RankerFactory();
-		Ranker ranker = rFact.loadRankerFromFile(savedModelPath);
-		
-		// read test features
-		List<RankList> test = FeatureManager.readInput(testFeaturesPath);
-		
-		// evaluate and save score 
-		try {
-			BufferedWriter writer = new BufferedWriter(new FileWriter(predictionsPath));
-			for (RankList rl : test) {
-				for (int i = 0; i < rl.size(); i++) {
-					DataPoint dataPoint = rl.get(i);
-					double score = ranker.eval(dataPoint);
-					writer.write(score + "\n");
+	public void linearRegressionTrain() {
+		String trainMetric = "NDCG@10";
+		RankerTrainer trainer = new RankerTrainer();
+		List<RankList> train = FeatureManager.readInput(trainingFeaturesPath);
+		int[] features = FeatureManager.getFeatureFromSampleVector(train);
+		MetricScorer trainScorer = new MetricScorerFactory().createScorer(trainMetric);
+		Ranker ranker = trainer.train(RANKER_TYPE.LINEAR_REGRESSION, train, features, trainScorer); 
+		ranker.save(savedModelPath);
+	}
+	
+	public void svmRankTrain() {
+		double c = 0.0001;
+		System.out.println("SVM Rank Training, current c: " + c);
+		ProcessBuilder pb = new ProcessBuilder();
+		pb.command(Property.SVM_RANK_LEARN_TOOL_PATH, "-c", String.valueOf(c), trainingFeaturesPath, savedModelPath);
+	 	Process process;
+	    try {
+	    	// start process
+	    	process = pb.start();
+	    	
+	    	// output process message
+	    	String line = null;
+	        BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+	        BufferedReader error = new BufferedReader(new InputStreamReader(process.getErrorStream()));
+	        while ( (line = reader.readLine()) != null) {
+	        	logger.info(line);
+	        }
+	        while ((line = error.readLine()) != null)
+	            logger.error(line);
+	        reader.close();
+	        error.close();
+	        
+	        process.waitFor();
+	        process.destroy();
+	    } catch (Exception e) {
+	        e.printStackTrace();
+	    }
+	}
+	
+	public void predict() {
+		if (rankerType != SVMRANK) {
+			RankerFactory rFact = new RankerFactory();
+			Ranker ranker = rFact.loadRankerFromFile(savedModelPath);
+			
+			// read test features
+			List<RankList> test = FeatureManager.readInput(testFeaturesPath);
+			
+			// evaluate and save score 
+			try {
+				BufferedWriter writer = new BufferedWriter(new FileWriter(predictionsPath));
+				for (RankList rl : test) {
+					for (int i = 0; i < rl.size(); i++) {
+						DataPoint dataPoint = rl.get(i);
+						double score = ranker.eval(dataPoint);
+						writer.write(score + "\n");
+					}
 				}
+				writer.close();
+			} catch (IOException e) {
+				e.printStackTrace();
 			}
-			writer.close();
-		} catch (IOException e) {
-			e.printStackTrace();
+		} else {
+			ProcessBuilder pb = new ProcessBuilder();
+			pb.command(Property.SVM_RANK_CLASSIFY_TOOL_PATH, testFeaturesPath, savedModelPath, predictionsPath);
+		 	Process process;
+		    try {
+		    	// start process
+		    	process = pb.start();
+		    	
+		    	// output process message
+		    	String line = null;
+		        BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+		        BufferedReader error = new BufferedReader(new InputStreamReader(process.getErrorStream()));
+		        while ( (line = reader.readLine()) != null) {
+		        	logger.info(line);
+		        }
+		        while ((line = error.readLine()) != null)
+		            logger.error(line);
+		        reader.close();
+		        error.close();
+		        
+		        process.waitFor();
+		        process.destroy();
+		    } catch (Exception e) {
+		        e.printStackTrace();
+		    }
 		}
 	}
 	
-	public void trainingDataEvaluate() {
-		RankerFactory rFact = new RankerFactory();
-		Ranker ranker = rFact.loadRankerFromFile(savedModelPath);
-		
-		// read test features
-		List<RankList> test = FeatureManager.readInput(trainingFeaturesPath);
-		
-		// evaluate and save score 
-		try {
-			BufferedWriter writer = new BufferedWriter(new FileWriter(trainPredictionsPath));
-			for (RankList rl : test) {
-				for (int i = 0; i < rl.size(); i++) {
-					DataPoint dataPoint = rl.get(i);
-					double score = ranker.eval(dataPoint);
-					writer.write(score + "\n");
+	public void trainingDataPredict() {
+		if (rankerType != SVMRANK) {
+			RankerFactory rFact = new RankerFactory();
+			Ranker ranker = rFact.loadRankerFromFile(savedModelPath);
+			
+			// read test features
+			List<RankList> test = FeatureManager.readInput(trainingFeaturesPath);
+			
+			// evaluate and save score 
+			try {
+				BufferedWriter writer = new BufferedWriter(new FileWriter(trainPredictionsPath));
+				for (RankList rl : test) {
+					for (int i = 0; i < rl.size(); i++) {
+						DataPoint dataPoint = rl.get(i);
+						double score = ranker.eval(dataPoint);
+						writer.write(score + "\n");
+					}
 				}
+				writer.close();
+			} catch (IOException e) {
+				e.printStackTrace();
 			}
-			writer.close();
-		} catch (IOException e) {
-			e.printStackTrace();
+		} else {
+			ProcessBuilder pb = new ProcessBuilder();
+			pb.command(Property.SVM_RANK_CLASSIFY_TOOL_PATH, trainingFeaturesPath, savedModelPath, trainPredictionsPath);
+		 	Process process;
+		    try {
+		    	// start process
+		    	process = pb.start();
+		    	
+		    	// output process message
+		    	String line = null;
+		        BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+		        BufferedReader error = new BufferedReader(new InputStreamReader(process.getErrorStream()));
+		        while ( (line = reader.readLine()) != null) {
+		        	logger.info(line);
+		        }
+		        while ((line = error.readLine()) != null)
+		            logger.error(line);
+		        reader.close();
+		        error.close();
+		        
+		        process.waitFor();
+		        process.destroy();
+		    } catch (Exception e) {
+		        e.printStackTrace();
+		    }
 		}
 	}
 	
@@ -256,8 +373,8 @@ public class RankerTest {
 		
 		RankerTest ranker = new RankerTest(rankerType, foldPath);
 		ranker.train();
-		ranker.evaluate();
-		ranker.trainingDataEvaluate();
+		ranker.predict();
+		ranker.trainingDataPredict();
 		SimpleEvaluator evaluator = new SimpleEvaluator(ranker.testFeaturesPath, ranker.predictionsPath);
 		evaluator.evaluate();
 		
@@ -271,15 +388,17 @@ public class RankerTest {
 	
 	public static void main(String[] args) throws Exception {
 		
-		String[] products = {"ASPECTJ", "SWT", "BIRT", "ECLIPSE_PLATFORM_UI", "TOMCAT", "JDT"};
+//		String[] products = {"ASPECTJ", "SWT", "BIRT", "ECLIPSE_PLATFORM_UI", "TOMCAT", "JDT"};
+		String[] products = {"ASPECTJ"};
 		for (String product : products) {
 			Property property = Property.loadInstance(product);
 			String directory = new File(property.getWorkingDir(), "data_folder").getAbsolutePath();
-			foldsTest(COORDINATE_ASCENT, directory, property.getEvaluateLogPath());
+			foldsTest(RANKNET, directory, property.getEvaluateLogPath());
 		}
 
-//		String fold = "D:\\data\\working\\AspectJ\\data_folder\\folder#0";
+//		String fold = "D:\\data\\working\\AspectJ\\data_folder\\folder#1";
 //		foldTest(COORDINATE_ASCENT, fold);
+//		foldTest(LINEAR_REGRESSION, fold);
 	}
 	
 	

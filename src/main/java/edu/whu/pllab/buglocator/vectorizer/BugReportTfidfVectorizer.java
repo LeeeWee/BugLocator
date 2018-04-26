@@ -27,6 +27,11 @@ public class BugReportTfidfVectorizer {
 	private HashMap<Integer, BugReport> bugReportsMap;
 	private ScoreType tokenScoreType = ScoreType.WFIDF;
 	
+	/** parameters of calculating structural information Okapi tf score*/
+	private boolean usingOkapi = false;
+	private double k3 = 1000;
+	private double b = 0;
+	
 	public BugReportTfidfVectorizer() {
 	}
 	
@@ -52,7 +57,10 @@ public class BugReportTfidfVectorizer {
 	public void calculateTokensWeight(HashMap<Integer, BugReport> bugReportsMap) {
 		logger.info("Calculating tokens weight for input bug reports...");
 		for (Entry<Integer, BugReport> entry : bugReportsMap.entrySet()) {
-			calculateTokensWeight(entry.getValue());
+			if (!usingOkapi)
+				calculateTokensWeight(entry.getValue());
+			else 
+				calculateTokensWeightByOkapi(entry.getValue());
 		}
 	}
 	
@@ -68,6 +76,20 @@ public class BugReportTfidfVectorizer {
 		bugReportCorpus.setDescriptionNorm(tfidf.calculateContentNorm(bugReportCorpus.getDescriptionTokens()));
 	} 
 	
+	/**
+	 *  calculate bug report's summary and description tokens by Okapi
+	 *  tf = k3 * x / (x + k3)
+	 */
+	public void calculateTokensWeightByOkapi(BugReport bugReport) {
+		BugReportCorpus bugReportCorpus = bugReport.getBugReportCorpus();
+		TfidfVectorizer<?> tfidf = usingCodeTfidf ? codeTfidf : brTfidf;
+		bugReportCorpus.setContentTokens(tfidf.vectorize(bugReportCorpus.getContent(), tokenScoreType));
+		bugReportCorpus.setContentNorm(tfidf.calculateContentNorm(bugReportCorpus.getContentTokens()));
+		bugReportCorpus.setSummaryTokens(tfidf.okapiTfidfVectorize(bugReportCorpus.getSummaryPart(), 0, k3, b));
+		bugReportCorpus.setSummaryNorm(tfidf.calculateContentNorm(bugReportCorpus.getSummaryTokens()));
+		bugReportCorpus.setDescriptionTokens(tfidf.okapiTfidfVectorize(bugReportCorpus.getDescriptionPart(), 0, k3, b));
+		bugReportCorpus.setDescriptionNorm(tfidf.calculateContentNorm(bugReportCorpus.getDescriptionTokens()));
+	}
     
     /** BugReport Sentence Iterator help training tfidf model */
 	private class BugReportSentenceIterator implements SentenceIterator<Integer> {
@@ -116,4 +138,13 @@ public class BugReportTfidfVectorizer {
 	public void setUsingCodeTfidf(boolean usingCodeTfidf) {
 		this.usingCodeTfidf = usingCodeTfidf;
 	}
+
+	public boolean isUsingOkapi() {
+		return usingOkapi;
+	}
+
+	public void setUsingOkapi(boolean usingOkapi) {
+		this.usingOkapi = usingOkapi;
+	}
+	
 }

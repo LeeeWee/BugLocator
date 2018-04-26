@@ -26,7 +26,7 @@ public class CrossValidationDataGenerator {
 		Property property = Property.getInstance();
 		
 		String workingDir = property.getWorkingDir();
-		File saveDir = new File(workingDir, "data_folder");
+		File saveDir = new File(workingDir, "data_folder#BM25");
 		if (!saveDir.exists())
 			saveDir.mkdir();
 		// initialize bugReport repository and code repository
@@ -65,9 +65,9 @@ public class CrossValidationDataGenerator {
 			HashMap<Integer, BugReport> testBugReports = bugReportsMapList.get(i); 
 			
 			// generate training data
-//			generator.setTrainingBugReportsMap(trainingBugReports);
-//			generator.generate(true);
-//			generator.writeRankingFeatures(new File(folder, TRAIN_DATA_PATH).getAbsolutePath());
+			generator.setTrainingBugReportsMap(trainingBugReports);
+			generator.generate(true);
+			generator.writeRankingFeatures(new File(folder, TRAIN_DATA_PATH).getAbsolutePath());
 			// generate test data
 			generator.setTestBugReportsMap(testBugReports);
 			generator.generate(false);

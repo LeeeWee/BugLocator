@@ -40,6 +40,8 @@ public class StructuralSimModelGenerator {
 	
 	private boolean normalize;
 	private boolean normalizePerBugReport = true; 
+	
+	private boolean usingOkapi = false;
 
 	private HashMap<Integer, BugReport> trainingBugReportsMap;
 	private HashMap<Integer, BugReport> testBugReportsMap;
@@ -264,8 +266,11 @@ public class StructuralSimModelGenerator {
 				if (brFieldNorm == 0 || codeFieldNorm == 0)
 					features[index] = 0.0;
 				else  // if norm value doesn't equal zero, calculate field similarity
-					features[index] = Similarity.vsmSimilarityWithoutNorm(brFieldTokens, codeFieldTokens)
-							/ (brFieldNorm * codeFieldNorm) * code.getLengthScore();
+					features[index] = Similarity.vsmSimilarityWithoutNorm(brFieldTokens, codeFieldTokens);
+				
+				if (!usingOkapi) // if calculate with BM25 method, do not need to divide norm value and multiply getLengthScore
+					features[index] = features[index] / (brFieldNorm * codeFieldNorm) * code.getLengthScore();
+							
 				fieldSimilaritySum += features[index];
 				index++;
 			}

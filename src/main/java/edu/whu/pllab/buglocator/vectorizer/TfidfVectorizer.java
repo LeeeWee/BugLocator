@@ -45,7 +45,7 @@ public class TfidfVectorizer<T> {
 	private SentenceIterator<T> iter;
 	
 	/** Lemur Tfidf vectorize parameter */
-	private double k = 1.0;
+	private double k1 = 1.0;
 	private double b = 0.3;
 	
 	public TfidfVectorizer(SentenceIterator<T> iter) {
@@ -228,6 +228,8 @@ public class TfidfVectorizer<T> {
 	
 	/** Count of documents a word appeared in */
 	public int docAppearedIn(String word) {
+		if (!docTermFrequencyMap.containsKey(word))
+			return 0;
 		return docTermFrequencyMap.get(word).size();
 	}
 	
@@ -370,13 +372,13 @@ public class TfidfVectorizer<T> {
 	}
 	
 	/** Lemur Tfidf Vectorize without given average document length */
-	public HashMap<String, TokenScore> lemurTfidfVectorize(String content, double k, double b) {
+	public HashMap<String, TokenScore> okapiTfidfVectorize(String content) {
 		double aveDocumentLength = averageDocLength();
-		return lemurTfidfVectorize(content, aveDocumentLength, k, b);
+		return okapiTfidfVectorize(content, aveDocumentLength, k1, b);
 	}
 	
 	/** Lemur Tfidf Vectorize with given average document length */
-	public HashMap<String, TokenScore> lemurTfidfVectorize(String content, double aveDocumentLength, double k, double b) {
+	public HashMap<String, TokenScore> okapiTfidfVectorize(String content, double aveDocumentLength, double k1, double b) {
 		HashMap<String, TokenScore> contentTokens = new HashMap<String, TokenScore>();
 		String[] tokens = content.split(" ");
 		HashMap<String, Integer> tokensCount = new HashMap<String, Integer>();
@@ -393,7 +395,7 @@ public class TfidfVectorizer<T> {
 		}
 		for (Entry<String, Integer> tokenEntry : tokensCount.entrySet()) {
 			String token = tokenEntry.getKey();
-			double okapiTf = okapiTfForWord(tokenEntry.getValue(), documentLength, aveDocumentLength, k, b);
+			double okapiTf = okapiTfForWord(tokenEntry.getValue(), documentLength, aveDocumentLength, k1, b);
 			double smoothedIdf = smoothedIdfForWord(token);
 			double tfidf = MathUtils.tfidf(okapiTf, smoothedIdf);
 			TokenScore tokenScore = new TokenScore(token, okapiTf, smoothedIdf, tfidf);
@@ -427,8 +429,11 @@ public class TfidfVectorizer<T> {
     	return (1 + Math.log(wordCount)) / (1 + Math.log(aveWordCount));
     }
     
-    public double okapiTfForWord(long wordCount, long documentLength, double aveDocumentLength, double k, double b) {
-    	return (k * wordCount / (wordCount + k * (1 - b + b * documentLength / aveDocumentLength)));
+    public double okapiTfForWord(long wordCount, long documentLength, double aveDocumentLength, double k1, double b) {
+    	if (b == 0)
+    		return k1 * wordCount / (wordCount + k1);
+    	else 
+    		return (k1 * wordCount / (wordCount + k1 * (1 - b + b * documentLength / aveDocumentLength)));
     }
     
     public double smoothedIdfForWord(String word) {
@@ -436,8 +441,8 @@ public class TfidfVectorizer<T> {
     }
 
 
-	public void setK(double k) {
-		this.k = k;
+	public void setK(double k1) {
+		this.k1 = k1;
 	}
 
 	public void setB(double b) {

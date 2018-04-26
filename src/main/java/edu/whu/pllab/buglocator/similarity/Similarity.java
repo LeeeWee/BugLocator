@@ -132,6 +132,48 @@ public class Similarity {
 		return sim;
 	}
 	
+	/**
+	 * sum document scores across all eight combinations similarity
+	 */
+	public static double BM25StructuralSimilarity(BugReport br, SourceCode code) {
+		double sim = 0.0;
+		BugReportCorpus brCorpus = br.getBugReportCorpus();
+		SourceCodeCorpus codeCorpus = code.getSourceCodeCorpus();
+		List<HashMap<String, TokenScore>> brFields = new ArrayList<HashMap<String, TokenScore>>();
+		List<Double> brFieldsNorm = new ArrayList<Double>();
+		List<HashMap<String, TokenScore>> codeFields = new ArrayList<HashMap<String, TokenScore>>();
+		List<Double> codeFieldsNorm = new ArrayList<Double>();
+		brFields.add(brCorpus.getSummaryTokens());
+		brFields.add(brCorpus.getDescriptionTokens());
+		brFieldsNorm.add(brCorpus.getSummaryNorm());
+		brFieldsNorm.add(brCorpus.getDescriptionNorm());
+		codeFields.add(codeCorpus.getClassPartTokens());
+		codeFields.add(codeCorpus.getMethodPartTokens());
+		codeFields.add(codeCorpus.getVariablePartTokens());
+		codeFields.add(codeCorpus.getCommentPartTokens());
+		codeFieldsNorm.add(codeCorpus.getClassCorpusNorm());
+		codeFieldsNorm.add(codeCorpus.getMethodCorpusNorm());
+		codeFieldsNorm.add(codeCorpus.getVariableCorpusNorm());
+		codeFieldsNorm.add(codeCorpus.getCommentCorpusNorm());
+		// sum documents scores across eight combinations
+		for (int i = 0; i < brFields.size(); i++) {
+			HashMap<String, TokenScore> brFieldTokens = brFields.get(i);
+			double brFieldNorm = brFieldsNorm.get(i);
+			if (brFieldNorm == 0)
+				continue;
+			for (int j = 0; j < codeFields.size(); j++) {
+				HashMap<String, TokenScore> codeFieldTokens = codeFields.get(j);
+				double codeFieldNorm = codeFieldsNorm.get(j);
+				if (codeFieldNorm == 0)
+					continue;
+				// calculate field similarity, do not need to normalize
+				double fieldSim = vsmSimilarityWithoutNorm(brFieldTokens, codeFieldTokens);
+				sim += fieldSim;
+			}
+		}
+		return sim;
+	}
+	
 	/** Vector Space Model similarity between input BugReport and SourceCode */
 	public static double vsmSimilarity(BugReport br, SourceCode code) {
 		double sim = 0.0;

@@ -42,8 +42,8 @@ public class RankBySourceCodeSimilarity {
 	}
 	
 	public static void rankBySourceCodeSimWithoutSplit() throws Exception {
-//		String[] products = {"ASPECTJ", "SWT", "BIRT", "ECLIPSE_PLATFORM_UI", "TOMCAT", "JDT"};
-		String[] products = {"TOMCAT"};
+		String[] products = {"ASPECTJ", "SWT", "BIRT", "ECLIPSE_PLATFORM_UI", "TOMCAT", "JDT"};
+//		String[] products = {"TOMCAT"};
 		
 		for (String product : products) {
 			logger.info("Current product: " + product);
@@ -75,11 +75,13 @@ public class RankBySourceCodeSimilarity {
 //			codeRepo.saveSourceCodeRepoToXML(property.getCodeRepositoryXMLPath(), property.getProduct());
 			
 			SourceCodeTfidfVectorizer codeTfidfVectorizer = new SourceCodeTfidfVectorizer(codeRepo.getSourceCodeMap());
+			codeTfidfVectorizer.setUsingOkapi(true);
 			codeTfidfVectorizer.train();
 			codeTfidfVectorizer.calculateTokensWeight(codeRepo.getSourceCodeMap());
 			
 			// calculate bug report tokens weight
 			BugReportTfidfVectorizer brTfidfVectorizer = new BugReportTfidfVectorizer(codeTfidfVectorizer.getTfidf());
+			brTfidfVectorizer.setUsingOkapi(true);
 			brTfidfVectorizer.calculateTokensWeight(validBugReports);
 			
 			// all results using to evaluate
@@ -269,8 +271,11 @@ public class RankBySourceCodeSimilarity {
 		List<IntegratedScore> integratedScoreList = new ArrayList<IntegratedScore>();
 		for (Entry<String, SourceCode> entry : sourceCodeMap.entrySet()) {
 //			double similarity = Similarity.similarity(bugReport, entry.getValue(), Similarity.VSM);
-			double similarity = Similarity.structuralSimilarity(bugReport, entry.getValue());
-			similarity *= entry.getValue().getLengthScore();
+//			double similarity = Similarity.structuralSimilarity(bugReport, entry.getValue());
+//			similarity *= entry.getValue().getLengthScore();
+			
+			double similarity = Similarity.BM25StructuralSimilarity(bugReport, entry.getValue());
+			
 //			for (Method method : entry.getValue().getMethodList()) {
 //				double methodSimilarity = Similarity.similarity(bugReport, method, Similarity.VSM);
 //				if (methodSimilarity > similarity)

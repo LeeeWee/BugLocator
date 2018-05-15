@@ -23,6 +23,7 @@
 			<attribute name="maven.pomderived" value="true"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="lib" path="D:/workspace/ranklib/RankLib-2.9.jar"/>
+	<classpathentry kind="lib" path="D:/workspace/eclipse-workspace/BugLocator/lib/RankLib-2.9.jar"/>
+	<classpathentry kind="lib" path="D:/workspace/eclipse-workspace/BugLocator/lib/JGibbLDA-v.1.0.jar" sourcepath="D:/workspace/Third-Party/JGibbLDA/JGibbLDA-v.1.0"/>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>

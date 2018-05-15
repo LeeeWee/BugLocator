@@ -70,6 +70,8 @@ public class RankingModelGenerator {
 	
 	private HashMap<BugReport, List<IntegratedScore>> finals;
 	
+	private Similarity sim;
+	
 	public RankingModelGenerator() {
 		maxSourceCodeSimilarity = Double.MIN_VALUE;
 		minSourceCodeSimilarity = Double.MAX_VALUE;
@@ -84,6 +86,7 @@ public class RankingModelGenerator {
 		maxFrequency = Double.MIN_VALUE;
 		minFrequency = Double.MAX_VALUE;
 		finals = new HashMap<BugReport, List<IntegratedScore>>();
+		sim = new Similarity();
 	}
 	
 	/** save features max min value to given file */
@@ -300,9 +303,10 @@ public class RankingModelGenerator {
 	
 	/** calculate source code similarity between given bug report and source code */
 	public double calculateSourceCodeSimilarity(BugReport br, SourceCode code) {
-		double sourceCodeSimilarity = Similarity.similarity(br, code, BR_CODE_SIMILARITY);
+		Similarity sim = new Similarity();
+		double sourceCodeSimilarity = sim.similarity(br, code, BR_CODE_SIMILARITY);
 		for (Method method : code.getMethodList()) {
-			double methodSimilarity = Similarity.similarity(br, method, BR_CODE_SIMILARITY);
+			double methodSimilarity = sim.similarity(br, method, BR_CODE_SIMILARITY);
 			if (methodSimilarity > sourceCodeSimilarity)
 				sourceCodeSimilarity = methodSimilarity;
 		}
@@ -391,7 +395,7 @@ public class RankingModelGenerator {
 		for (Entry<Integer, BugReport> entry : trainingBugReportsMap.entrySet()) {
 			if (entry.getKey().equals(br.getBugID()))
 				continue;
-			double similarity = Similarity.similarity(br, entry.getValue(), BR_BR_SIMILARITY);
+			double similarity = sim.similarity(br, entry.getValue(), BR_BR_SIMILARITY);
 			heap.add(new SimilarBugReport(entry.getValue(), similarity));
 		}
 		if (top <= 0) {
@@ -534,5 +538,14 @@ public class RankingModelGenerator {
 	public HashMap<BugReport, List<IntegratedScore>> getFinals() {
 		return finals;
 	}
+
+	public Similarity getSim() {
+		return sim;
+	}
+
+	public void setSim(Similarity sim) {
+		this.sim = sim;
+	}
+	
 
 }

@@ -20,13 +20,15 @@ public class CrossValidationDataGenerator {
 	private static final Logger logger = LoggerFactory.getLogger(CrossValidationDataGenerator.class);
 	
 	public static final String TRAIN_DATA_PATH = "train.dat";
+	public static final String TRAINBR_INDEX_PATH = "trainBR.i";
 	public static final String TEST_DATA_PATH = "test.dat";
+	public static final String TESTBR_INDEX_PATH = "testBR.i";
 	
 	public static void StructuralSimGenerate() {
 		Property property = Property.getInstance();
 		
 		String workingDir = property.getWorkingDir();
-		File saveDir = new File(workingDir, "data_folder#BM25");
+		File saveDir = new File(workingDir, "data_folder");
 		if (!saveDir.exists())
 			saveDir.mkdir();
 		// initialize bugReport repository and code repository
@@ -34,11 +36,13 @@ public class CrossValidationDataGenerator {
 		
 		SourceCodeRepository codeRepo = new SourceCodeRepository();
 		SourceCodeTfidfVectorizer codeVectorizer = new SourceCodeTfidfVectorizer(codeRepo.getSourceCodeMap());
+		codeVectorizer.setUsingOkapi(false);
 		codeVectorizer.train();
 		codeVectorizer.calculateTokensWeight(codeRepo.getSourceCodeMap());
 		
 		// train tfidf model using training bug reports
 		BugReportTfidfVectorizer brVectorizer = new BugReportTfidfVectorizer(codeVectorizer.getTfidf());
+		brVectorizer.setUsingOkapi(false);
 		// TfidfVectorizer training and test bug reports
 		brVectorizer.calculateTokensWeight(brRepo.getBugReports());
 		
@@ -47,6 +51,7 @@ public class CrossValidationDataGenerator {
 		List<HashMap<Integer, BugReport>> bugReportsMapList = splitter.getBugReportsMapList();
 		
 		StructuralSimModelGenerator generator = new StructuralSimModelGenerator();
+		generator.setUsingOkapi(false);
 		generator.setNormalize(false);
 		generator.setNormalizePerBugReport(false);
 		generator.setSourceCodeMap(codeRepo.getSourceCodeMap());
@@ -67,11 +72,13 @@ public class CrossValidationDataGenerator {
 			// generate training data
 			generator.setTrainingBugReportsMap(trainingBugReports);
 			generator.generate(true);
-			generator.writeRankingFeatures(new File(folder, TRAIN_DATA_PATH).getAbsolutePath());
+			generator.writeRankingFeatures(new File(folder, TRAIN_DATA_PATH).getAbsolutePath(),
+					new File(folder, TRAINBR_INDEX_PATH).getAbsolutePath());
 			// generate test data
 			generator.setTestBugReportsMap(testBugReports);
 			generator.generate(false);
-			generator.writeRankingFeatures(new File(folder, TEST_DATA_PATH).getAbsolutePath());
+			generator.writeRankingFeatures(new File(folder, TEST_DATA_PATH).getAbsolutePath(),
+					new File(folder, TESTBR_INDEX_PATH).getAbsolutePath());
 		}
 	}
 	

@@ -90,7 +90,7 @@ public class BugReportTfidfVectorizer {
 		bugReportCorpus.setDescriptionTokens(tfidf.okapiTfidfVectorize(bugReportCorpus.getDescriptionPart(), 0, k3, b));
 		bugReportCorpus.setDescriptionNorm(tfidf.calculateContentNorm(bugReportCorpus.getDescriptionTokens()));
 	}
-    
+	
     /** BugReport Sentence Iterator help training tfidf model */
 	private class BugReportSentenceIterator implements SentenceIterator<Integer> {
 

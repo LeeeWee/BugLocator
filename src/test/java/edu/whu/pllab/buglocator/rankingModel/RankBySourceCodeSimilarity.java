@@ -81,7 +81,7 @@ public class RankBySourceCodeSimilarity {
 			
 			// calculate bug report tokens weight
 			BugReportTfidfVectorizer brTfidfVectorizer = new BugReportTfidfVectorizer(codeTfidfVectorizer.getTfidf());
-			brTfidfVectorizer.setUsingOkapi(true);
+			brTfidfVectorizer.setUsingOkapi(false);
 			brTfidfVectorizer.calculateTokensWeight(validBugReports);
 			
 			// all results using to evaluate
@@ -205,10 +205,11 @@ public class RankBySourceCodeSimilarity {
 	public static HashMap<BugReport, List<IntegratedScore>> sortBySourceCodeSimilarity(
 			HashMap<Integer, BugReport> testBugReports, HashMap<String, SourceCode> sourceCodeMap) {
 		HashMap<BugReport, List<IntegratedScore>> integratedScoresMap = new HashMap<BugReport, List<IntegratedScore>>();
+		Similarity sim = new Similarity();
 		for (BugReport bugReport : testBugReports.values()) {
 			List<IntegratedScore> integratedScoreList = new ArrayList<IntegratedScore>();
 			for (Entry<String, SourceCode> entry : sourceCodeMap.entrySet()) {
-				double similarity = Similarity.vsmSimilarity(bugReport, entry.getValue());
+				double similarity = sim.vsmSimilarity(bugReport, entry.getValue());
 				IntegratedScore score = new IntegratedScore(entry.getKey(), false, null);
 				score.setIntegratedScore(similarity);
 				integratedScoreList.add(score);
@@ -269,12 +270,13 @@ public class RankBySourceCodeSimilarity {
 	public static List<IntegratedScore> calculateVSMSimilarity(BugReport bugReport,
 			HashMap<String, SourceCode> sourceCodeMap) {
 		List<IntegratedScore> integratedScoreList = new ArrayList<IntegratedScore>();
+		Similarity sim = new Similarity();
 		for (Entry<String, SourceCode> entry : sourceCodeMap.entrySet()) {
 //			double similarity = Similarity.similarity(bugReport, entry.getValue(), Similarity.VSM);
 //			double similarity = Similarity.structuralSimilarity(bugReport, entry.getValue());
 //			similarity *= entry.getValue().getLengthScore();
 			
-			double similarity = Similarity.BM25StructuralSimilarity(bugReport, entry.getValue());
+			double similarity = sim.BM25StructuralSimilarity(bugReport, entry.getValue());
 			
 //			for (Method method : entry.getValue().getMethodList()) {
 //				double methodSimilarity = Similarity.similarity(bugReport, method, Similarity.VSM);

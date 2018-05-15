@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
 
+import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 import edu.whu.pllab.buglocator.common.BugReport;
@@ -18,11 +19,21 @@ public class Similarity {
 	
 	public final static int VSM = 1;
 	public final static int SYMMETRIC = 2;  // sim(T, S) = (sim(T->S) + sim(S->T)) / 2
-	public final static int ASYMMETRIC = 3; // sim(T, S) = sim(T->S)
+	public final static int WORDVECTORS = 3; 
 	public final static int PARAGRAPH_VECTOR = 4;
-
+	
+	private Word2Vec word2vec;
+	
+	public Similarity() {
+		this.word2vec = null;
+	}
+	
+	public Similarity(Word2Vec word2vec) {
+		this.word2vec = word2vec;
+	}
+	
 	/** similarity between BugReport and SourceCode by specific similarity type */
-	public static double similarity(BugReport br, SourceCode code, int similarityType) {
+	public double similarity(BugReport br, SourceCode code, int similarityType) {
 		double sim = 0;
 		switch (similarityType) {
 			case VSM:
@@ -30,9 +41,6 @@ public class Similarity {
 				break;
 			case SYMMETRIC:
 				sim = symmetricSimilarity(br, code);
-				break;
-			case ASYMMETRIC:
-				sim = asymmetricSimilarity(br, code);
 				break;
 			case PARAGRAPH_VECTOR:
 				sim = paragraphVectorSimilarity(br, code);
@@ -44,7 +52,7 @@ public class Similarity {
 	}
 	
 	/** similarity between input BugReports by specific similarity type */
-	public static double similarity(BugReport br1, BugReport br2, int similarityType) {
+	public double similarity(BugReport br1, BugReport br2, int similarityType) {
 		double sim = 0;
 		switch (similarityType) {
 			case VSM:
@@ -52,9 +60,6 @@ public class Similarity {
 				break;
 			case SYMMETRIC:
 				sim = symmetricSimilarity(br1, br2);
-				break;
-			case ASYMMETRIC:
-				sim = asymmetricSimilarity(br1, br2);
 				break;
 			case PARAGRAPH_VECTOR:
 				sim = paragraphVectorSimilarity(br1, br2);
@@ -66,7 +71,7 @@ public class Similarity {
 	}
 	
 	/** similarity between BugReport and SourceCode by specific similarity type */
-	public static double similarity(BugReport br, Method method, int similarityType) {
+	public double similarity(BugReport br, Method method, int similarityType) {
 		double sim = 0;
 		switch (similarityType) {
 			case VSM:
@@ -74,9 +79,6 @@ public class Similarity {
 				break;
 			case SYMMETRIC:
 				sim = symmetricSimilarity(br, method);
-				break;
-			case ASYMMETRIC:
-				sim = asymmetricSimilarity(br, method);
 				break;
 			case PARAGRAPH_VECTOR:
 				sim = paragraphVectorSimilarity(br, method);
@@ -93,7 +95,7 @@ public class Similarity {
 	 * then performing a separate similarity calculating for each of the eight (query represent, document field) 
 	 * combinations and then sum document scores across all eight similarity
 	 */
-	public static double structuralSimilarity(BugReport br, SourceCode code) {
+	public double structuralSimilarity(BugReport br, SourceCode code) {
 		double sim = 0.0;
 		BugReportCorpus brCorpus = br.getBugReportCorpus();
 		SourceCodeCorpus codeCorpus = code.getSourceCodeCorpus();
@@ -125,7 +127,7 @@ public class Similarity {
 				if (codeFieldNorm == 0)
 					continue;
 				// calculate field similarity
-				double fieldSim = vsmSimilarityWithoutNorm(brFieldTokens, codeFieldTokens) / (brFieldNorm * codeFieldNorm);
+				double fieldSim = vsmSimilarity(brFieldTokens, codeFieldTokens, false) / (brFieldNorm * codeFieldNorm);
 				sim += fieldSim;
 			}
 		}
@@ -135,7 +137,7 @@ public class Similarity {
 	/**
 	 * sum document scores across all eight combinations similarity
 	 */
-	public static double BM25StructuralSimilarity(BugReport br, SourceCode code) {
+	public double BM25StructuralSimilarity(BugReport br, SourceCode code) {
 		double sim = 0.0;
 		BugReportCorpus brCorpus = br.getBugReportCorpus();
 		SourceCodeCorpus codeCorpus = code.getSourceCodeCorpus();
@@ -167,7 +169,7 @@ public class Similarity {
 				if (codeFieldNorm == 0)
 					continue;
 				// calculate field similarity, do not need to normalize
-				double fieldSim = vsmSimilarityWithoutNorm(brFieldTokens, codeFieldTokens);
+				double fieldSim = vsmSimilarity(brFieldTokens, codeFieldTokens, false);
 				sim += fieldSim;
 			}
 		}
@@ -175,7 +177,7 @@ public class Similarity {
 	}
 	
 	/** Vector Space Model similarity between input BugReport and SourceCode */
-	public static double vsmSimilarity(BugReport br, SourceCode code) {
+	public double vsmSimilarity(BugReport br, SourceCode code) {
 		double sim = 0.0;
 		
 		double brNorm = br.getBugReportCorpus().getContentNorm();
@@ -184,14 +186,14 @@ public class Similarity {
 		if (brNorm == 0 || codeNorm == 0)
 			return sim;
 		
-		sim = vsmSimilarityWithoutNorm(br.getBugReportCorpus().getContentTokens(), 
-				code.getSourceCodeCorpus().getContentTokens()) / (brNorm * codeNorm);
+		sim = vsmSimilarity(br.getBugReportCorpus().getContentTokens(), 
+				code.getSourceCodeCorpus().getContentTokens(), false) / (brNorm * codeNorm);
 		
 		return sim;
 	}
 	
 	/** Vector Space Model similarity between input BugReports */
-	public static double vsmSimilarity(BugReport br1, BugReport br2) {
+	public double vsmSimilarity(BugReport br1, BugReport br2) {
 		double sim = 0;
 		
 		double br1Norm = br1.getBugReportCorpus().getContentNorm();
@@ -200,14 +202,14 @@ public class Similarity {
 		if (br1Norm == 0 || br2Norm == 0)
 			return sim;
 		
-		sim = vsmSimilarityWithoutNorm(br1.getBugReportCorpus().getContentTokens(),
-				br2.getBugReportCorpus().getContentTokens()) / (br1Norm * br2Norm);
+		sim = vsmSimilarity(br1.getBugReportCorpus().getContentTokens(),
+				br2.getBugReportCorpus().getContentTokens(), false) / (br1Norm * br2Norm);
 		
 		return sim;
 	}
 	
 	/** Vector Space Model similarity between input BugReport and Method */
-	public static double vsmSimilarity(BugReport br, Method method) {
+	public double vsmSimilarity(BugReport br, Method method) {
 		double sim = 0;
 		
 		double brNorm = br.getBugReportCorpus().getContentNorm();
@@ -216,95 +218,90 @@ public class Similarity {
 		if (brNorm == 0 || methodNorm == 0)
 			return sim;
 		
-		sim = vsmSimilarityWithoutNorm(br.getBugReportCorpus().getContentTokens(), method.getContentTokens())
-				/ (br.getBugReportCorpus().getContentNorm() * method.getContentNorm());
+		sim = vsmSimilarity(br.getBugReportCorpus().getContentTokens(), method.getContentTokens(), false)
+				/ (brNorm * methodNorm);
 		
 		return sim;
 	}
 	
 	/** Vector Space Model similarity between input tokenScoreMaps */
-	public static double vsmSimilarity(HashMap<String, TokenScore> tokenScoreMap1,
+	public double vsmSimilarity(HashMap<String, TokenScore> tokenScoreMap1,
 			HashMap<String, TokenScore> tokenScoreMap2) {
-		double sim = 0, norm1 = 0, norm2 = 0;
-		for (Entry<String, TokenScore> entry1 : tokenScoreMap1.entrySet()) {
-			norm1 += entry1.getValue().getTokenWeight() * entry1.getValue().getTokenWeight();
-			if (tokenScoreMap2.containsKey(entry1.getKey())) {
-				sim += entry1.getValue().getTokenWeight() * tokenScoreMap2.get(entry1.getKey()).getTokenWeight();
-			}
-		}
-		for (Entry<String, TokenScore> entry2 : tokenScoreMap2.entrySet()) {
-			norm2 += entry2.getValue().getTokenWeight() * entry2.getValue().getTokenWeight();
-		}
-		
-		norm1 = Math.sqrt(norm1);
-		norm2 = Math.sqrt(norm2);
-		
-		if (norm1 ==0 || norm2 == 0)
-			return 0.0;
-		return sim / (norm1 * norm2);
+		return vsmSimilarity(tokenScoreMap1, tokenScoreMap2, true);
 	}
 	
 	/** Vector Space Model similarity between input tokenScoreMaps without dividing norm value */
-	public static double vsmSimilarityWithoutNorm(HashMap<String, TokenScore> tokenScoreMap1,
-			HashMap<String, TokenScore> tokenScoreMap2) {
+	public double vsmSimilarity(HashMap<String, TokenScore> tokenScoreMap1,
+			HashMap<String, TokenScore> tokenScoreMap2, boolean norm) {
 		double sim = 0;
 		for (Entry<String, TokenScore> entry1 : tokenScoreMap1.entrySet()) {
 			if (tokenScoreMap2.containsKey(entry1.getKey())) {
 				sim += entry1.getValue().getTokenWeight() * tokenScoreMap2.get(entry1.getKey()).getTokenWeight();
 			}
 		}
-		return sim;
+		if (!norm) {
+			return sim;
+		}
+		else {
+			double norm1 = 0, norm2 = 0;
+			for (Entry<String, TokenScore> entry1 : tokenScoreMap1.entrySet()) {
+				norm1 += entry1.getValue().getTokenWeight() * entry1.getValue().getTokenWeight();
+			}
+			for (Entry<String, TokenScore> entry2 : tokenScoreMap2.entrySet()) {
+				norm2 += entry2.getValue().getTokenWeight() * entry2.getValue().getTokenWeight();
+			}
+			if (norm1 == 0 || norm2 == 0)
+				return 0.0;
+			return sim / (norm1 * norm2);
+		}
 	}
 	
 	/** symmetric similarity between input BugReport and SourceCode, sim(T, S) = (sim(T->S) + sim(S->T)) / 2 */
-	public static double symmetricSimilarity(BugReport br, SourceCode code) {
-		return (asymmetricSimilarity(br, code) + 
-				asymmetricSimilarityWithoutNorm(br.getBugReportCorpus().getContentTokens(),
-						code.getSourceCodeCorpus().getContentTokens()) / code.getSourceCodeCorpus().getContentNorm())
-				/ 2;
+	public double symmetricSimilarity(BugReport br, SourceCode code) {
+		HashMap<String, TokenScore> brTokens = br.getBugReportCorpus().getContentTokens();
+		HashMap<String, TokenScore> codeTokens = code.getSourceCodeCorpus().getContentTokens();
+		double brContentNorm = br.getBugReportCorpus().getContentNorm();
+		double codeContentNorm = code.getSourceCodeCorpus().getContentNorm();
+		return (asymmetricSimilarity(brTokens, codeTokens, false) / brContentNorm
+				+ asymmetricSimilarity(codeTokens, brTokens, false) / codeContentNorm) / 2;
 	}
 	
 	/** symmetric similarity between input BugReports, sim(T, S) = (sim(T->S) + sim(S->T)) / 2 */
-	public static double symmetricSimilarity(BugReport br1, BugReport br2) {
-		return (asymmetricSimilarity(br1, br2) + asymmetricSimilarity(br2, br1)) / 2;
+	public double symmetricSimilarity(BugReport br1, BugReport br2) {
+		HashMap<String, TokenScore> br1Tokens = br1.getBugReportCorpus().getContentTokens();
+		HashMap<String, TokenScore> br2Tokens = br2.getBugReportCorpus().getContentTokens();
+		double br1ContentNorm = br1.getBugReportCorpus().getContentNorm();
+		double br2ContentNorm = br2.getBugReportCorpus().getContentNorm();
+		return (asymmetricSimilarity(br1Tokens, br2Tokens, false) / br1ContentNorm
+				+ asymmetricSimilarity(br2Tokens, br1Tokens, false) / br2ContentNorm) / 2;
 	}
 	
 	/** symmetric similarity between input BugReport and method, sim(T, S) = (sim(T->S) + sim(S->T)) / 2 */
-	public static double symmetricSimilarity(BugReport br, Method method) {
-		return (asymmetricSimilarity(br, method)
-				+ asymmetricSimilarityWithoutNorm(br.getBugReportCorpus().getContentTokens(),
-						method.getContentTokens()) / method.getContentNorm())
-				/ 2;
+	public double symmetricSimilarity(BugReport br, Method method) {
+		HashMap<String, TokenScore> brTokens = br.getBugReportCorpus().getContentTokens();
+		HashMap<String, TokenScore> methodTokens = method.getContentTokens();
+		double brContentNorm = br.getBugReportCorpus().getContentNorm();
+		double methodContentNorm = method.getContentNorm();
+		return (asymmetricSimilarity(brTokens, methodTokens, false) / brContentNorm
+				+ asymmetricSimilarity(methodTokens, brTokens, false) / methodContentNorm) / 2;
 	}
 	
 	/** symmetric similarity between input tokenScoreMaps, sim(T, S) = (sim(T->S) + sim(S->T)) / 2 */
-	public static double symmetricSimilarity(HashMap<String, TokenScore> tokenScoreMap1,
+	public double symmetricSimilarity(HashMap<String, TokenScore> tokenScoreMap1,
 			HashMap<String, TokenScore> tokenScoreMap2) {
 		return (asymmetricSimilarity(tokenScoreMap1, tokenScoreMap2)
 				+ asymmetricSimilarity(tokenScoreMap2, tokenScoreMap1)) / 2;
 	}
 	
-	/** symmetric similarity between input BugReport and SourceCode, sim(T, S) = sim(T->S) */
-	public static double asymmetricSimilarity(BugReport br, SourceCode code) {
-		return asymmetricSimilarityWithoutNorm(br.getBugReportCorpus().getContentTokens(),
-				code.getSourceCodeCorpus().getContentTokens()) / br.getBugReportCorpus().getContentNorm();
-	}
-	
-	/** symmetric similarity between input BugReports, sim(T, S) = sim(T->S) */
-	public static double asymmetricSimilarity(BugReport br1, BugReport br2) {
-		return asymmetricSimilarityWithoutNorm(br1.getBugReportCorpus().getContentTokens(),
-				br2.getBugReportCorpus().getContentTokens()) / br1.getBugReportCorpus().getContentNorm();
-	}
-	
-	/** symmetric similarity between input BugReport and method, sim(T, S) = sim(T->S) */
-	public static double asymmetricSimilarity(BugReport br, Method method) {
-		return asymmetricSimilarityWithoutNorm(br.getBugReportCorpus().getContentTokens(),
-				method.getContentTokens()) / br.getBugReportCorpus().getContentNorm();
-	}
-	
 	/** symmetric similarity between input tokenScoreMaps, sim(T, S) = sim(T->S) */
-	public static double asymmetricSimilarity(HashMap<String, TokenScore> tokenScoreMap1,
+	public double asymmetricSimilarity(HashMap<String, TokenScore> tokenScoreMap1,
 			HashMap<String, TokenScore> tokenScoreMap2) {
+		return asymmetricSimilarity(tokenScoreMap1, tokenScoreMap2, true);
+	}
+	
+	/** symmetric similarity between input tokenScoreMaps without dividing norm value, sim(T, S) = sim(T->S) */
+	public double asymmetricSimilarity(HashMap<String, TokenScore> tokenScoreMap1,
+			HashMap<String, TokenScore> tokenScoreMap2, boolean norm) {
 		double simSum = 0.0;
 		double weights = 0.0;
 		if (tokenScoreMap1.size() == 0 || tokenScoreMap2.size() == 0) 
@@ -314,41 +311,112 @@ public class Similarity {
 			if(tokenScoreMap2.containsKey(entry1.getKey()))
 				sim = 1.0;
 			simSum += sim;
-			weights += entry1.getValue().getTokenWeight();
+			if (norm)
+				weights += entry1.getValue().getTokenWeight();
 		}
-		if (weights == 0)
-			return 0.0;
-		return simSum / weights;
+		if (norm) {
+			if (weights == 0)
+				return 0.0;
+			return simSum / weights;
+		}
+		else 
+			return simSum;
 	}
-
-	/** symmetric similarity between input tokenScoreMaps without dividing norm value, sim(T, S) = sim(T->S) */
-	public static double asymmetricSimilarityWithoutNorm(HashMap<String, TokenScore> tokenScoreMap1,
+	
+	/** symmetric similarity between input bug report and source code using word vectors, 
+	 * sim(T, S) = (sim(T->S) + sim(S->T)) / 2 */
+	public double symmetricSimilarityWithWordVectors(BugReport br, SourceCode code) {
+		HashMap<String, TokenScore> brTokens = br.getBugReportCorpus().getContentTokens();
+		HashMap<String, TokenScore> codeTokens = code.getSourceCodeCorpus().getContentTokens();
+		double brContentNorm = br.getBugReportCorpus().getContentNorm();
+		double codeContentNorm = code.getSourceCodeCorpus().getContentNorm();
+		return (asymmetricSimilarityWithWordVectors(brTokens, codeTokens, false) / brContentNorm
+				+ asymmetricSimilarityWithWordVectors(codeTokens, brTokens, false) / codeContentNorm) / 2;
+	}
+	
+	/** symmetric similarity between input BugReports using word vectors, sim(T, S) = (sim(T->S) + sim(S->T)) / 2 */
+	public double symmetricSimilarityWithWordVectors(BugReport br1, BugReport br2) {
+		HashMap<String, TokenScore> br1Tokens = br1.getBugReportCorpus().getContentTokens();
+		HashMap<String, TokenScore> br2Tokens = br2.getBugReportCorpus().getContentTokens();
+		double br1ContentNorm = br1.getBugReportCorpus().getContentNorm();
+		double br2ContentNorm = br2.getBugReportCorpus().getContentNorm();
+		return (asymmetricSimilarityWithWordVectors(br1Tokens, br2Tokens, false) / br1ContentNorm
+				+ asymmetricSimilarityWithWordVectors(br2Tokens, br1Tokens, false) / br2ContentNorm) / 2;
+	}
+	
+	/** symmetric similarity between input BugReport and method using word vectors, sim(T, S) = (sim(T->S) + sim(S->T)) / 2 */
+	public double symmetricSimilarityWithWordVectors(BugReport br, Method method) {
+		HashMap<String, TokenScore> brTokens = br.getBugReportCorpus().getContentTokens();
+		HashMap<String, TokenScore> methodTokens = method.getContentTokens();
+		double brContentNorm = br.getBugReportCorpus().getContentNorm();
+		double methodContentNorm = method.getContentNorm();
+		return (asymmetricSimilarityWithWordVectors(brTokens, methodTokens, false) / brContentNorm
+				+ asymmetricSimilarityWithWordVectors(methodTokens, brTokens, false) / methodContentNorm) / 2;
+	}
+	
+	/** symmetric similarity between input tokenScoreMaps using word vectors, sim(T, S) = (sim(T->S) + sim(S->T)) / 2 */
+	public double symmetricSimilarityWithWordVectors(HashMap<String, TokenScore> tokenScoreMap1,
 			HashMap<String, TokenScore> tokenScoreMap2) {
+		return (asymmetricSimilarityWithWordVectors(tokenScoreMap1, tokenScoreMap2)
+				+ asymmetricSimilarityWithWordVectors(tokenScoreMap2, tokenScoreMap1)) / 2;
+	}
+	
+	/** symmetric similarity between input tokenScoreMaps using word vectors */
+	public double asymmetricSimilarityWithWordVectors(HashMap<String, TokenScore> tokenScoreMap1,
+			HashMap<String, TokenScore> tokenScoreMap2) {
+		return asymmetricSimilarityWithWordVectors(tokenScoreMap1, tokenScoreMap2, true);
+	}
+	
+	/** symmetric similarity between input tokenScoreMaps using word vectors, if norm is true, normalized similairty result*/
+	public double asymmetricSimilarityWithWordVectors(HashMap<String, TokenScore> tokenScoreMap1,
+			HashMap<String, TokenScore> tokenScoreMap2, boolean norm) {
 		double simSum = 0.0;
+		double weights = 0.0;
 		if (tokenScoreMap1.size() == 0 || tokenScoreMap2.size() == 0) 
 			return 0.0;
 		for (Entry<String, TokenScore> entry1 : tokenScoreMap1.entrySet()) {
-			double sim = 0.0;
-			if(tokenScoreMap2.containsKey(entry1.getKey()))
-				sim = 1.0;
-			simSum += sim;
+			if (!word2vec.hasWord(entry1.getKey()))
+				continue;
+			double maxSim = 0.0;
+			for (Entry<String, TokenScore> entry2 : tokenScoreMap2.entrySet()) {
+				double sim = word2vec.hasWord(entry2.getKey()) ? word2vec.similarity(entry1.getKey(), entry2.getKey()) : 0;
+				if (sim > maxSim)
+					maxSim = sim;
+			}
+			simSum += maxSim;
+			if (norm)
+				weights += entry1.getValue().getTokenWeight();
 		}
-		return simSum;
+		if (norm) {
+			if (weights == 0)
+				return 0.0;
+			return simSum / weights;
+		}
+		else 
+			return simSum;
 	}
 	
 	/** paragraph vector between input BugReport and SourceCode */
-	public static double paragraphVectorSimilarity(BugReport br, SourceCode code) {
+	public double paragraphVectorSimilarity(BugReport br, SourceCode code) {
 		return Transforms.cosineSim(br.getParagraphVector(), code.getParagraphVector());
 	}
 	
 	/** paragraph vector between input BugReports */
-	public static double paragraphVectorSimilarity(BugReport br1, BugReport br2) {
+	public double paragraphVectorSimilarity(BugReport br1, BugReport br2) {
 		return Transforms.cosineSim(br1.getParagraphVector(), br2.getParagraphVector());
 	}
 	
 	/** paragraph vector between input BugReport and Method */
-	public static double paragraphVectorSimilarity(BugReport br, Method method) {
+	public double paragraphVectorSimilarity(BugReport br, Method method) {
 		return Transforms.cosineSim(br.getParagraphVector(), method.getParagraphVector());
+	}
+
+	public Word2Vec getWord2vec() {
+		return word2vec;
+	}
+
+	public void setWord2vec(Word2Vec word2vec) {
+		this.word2vec = word2vec;
 	}
 	
 }

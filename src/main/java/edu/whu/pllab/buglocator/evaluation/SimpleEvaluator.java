@@ -242,4 +242,8 @@ public class SimpleEvaluator {
 		return experimentResult;
 	}
 
+	public List<List<IntegratedScore>> getIntergratedScores() {
+		return intergratedScores;
+	}
+
 }

@@ -6,19 +6,23 @@ import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Set;
 import java.util.Map.Entry;
 import java.util.TreeSet;
 
 import edu.whu.pllab.buglocator.Property;
 import edu.whu.pllab.buglocator.common.BugReport;
 import edu.whu.pllab.buglocator.common.BugReportRepository;
+import edu.whu.pllab.buglocator.common.Method;
 import edu.whu.pllab.buglocator.common.SourceCode;
 import edu.whu.pllab.buglocator.common.SourceCodeRepository;
+import edu.whu.pllab.buglocator.common.TokenScore;
 import edu.whu.pllab.buglocator.evaluation.Evaluator;
 import edu.whu.pllab.buglocator.rankingmodel.IntegratedScore;
 import edu.whu.pllab.buglocator.similarity.Similarity;
 import edu.whu.pllab.buglocator.vectorizer.BugReportTfidfVectorizer;
 import edu.whu.pllab.buglocator.vectorizer.SourceCodeTfidfVectorizer;
+import edu.whu.pllab.buglocator.vectorizer.TfidfVectorizer;
 
 public class VSMRankTestOnBRTracerData {
 
@@ -65,7 +69,7 @@ public class VSMRankTestOnBRTracerData {
 			
 			// calculate bug report tokens weight
 			BugReportTfidfVectorizer brTfidfVectorizer = new BugReportTfidfVectorizer(codeTfidfVectorizer.getTfidf());
-			brTfidfVectorizer.setUsingOkapi(true);
+			brTfidfVectorizer.setUsingOkapi(false);
 			brTfidfVectorizer.calculateTokensWeight(brRepo.getBugReports());
 			
 			// all results using to evaluate
@@ -116,12 +120,13 @@ public class VSMRankTestOnBRTracerData {
 	public static List<IntegratedScore> calculateVSMSimilarity(BugReport bugReport,
 			HashMap<String, SourceCode> sourceCodeMap) {
 		List<IntegratedScore> integratedScoreList = new ArrayList<IntegratedScore>();
+		Similarity sim = new Similarity();
 		for (Entry<String, SourceCode> entry : sourceCodeMap.entrySet()) {
 //			double similarity = Similarity.similarity(bugReport, entry.getValue(), Similarity.VSM);
 //			double similarity = Similarity.structuralSimilarity(bugReport, entry.getValue());
 //			similarity *= entry.getValue().getLengthScore();
 			
-			double similarity = Similarity.BM25StructuralSimilarity(bugReport, entry.getValue());
+			double similarity = sim.BM25StructuralSimilarity(bugReport, entry.getValue());
 			
 //			for (Method method : entry.getValue().getMethodList()) {
 //				double methodSimilarity = Similarity.similarity(bugReport, method, Similarity.VSM);
@@ -159,6 +164,5 @@ public class VSMRankTestOnBRTracerData {
 			bugReport.setFixedFiles(modifiedFiles);
 		}
 	}
-	
 	
 }

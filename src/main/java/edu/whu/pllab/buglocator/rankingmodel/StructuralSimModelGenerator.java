@@ -52,12 +52,15 @@ public class StructuralSimModelGenerator {
 	
 	private HashMap<BugReport, List<IntegratedScore>> finals;
 	
+	private Similarity sim;
+	
 	public StructuralSimModelGenerator() {
 		for (int i = 0; i < maxFieldSimilarities.length; i++)
 			maxFieldSimilarities[i] = Double.MIN_VALUE;
 		for (int i = 0; i < minFieldSimilarities.length; i++)
 			minFieldSimilarities[i] = Double.MIN_VALUE;
 		finals = new HashMap<BugReport, List<IntegratedScore>>();
+		sim = new Similarity();
 	}
 	
 	/** save features max min value to given file */
@@ -265,11 +268,12 @@ public class StructuralSimModelGenerator {
 				double codeFieldNorm = codeFieldsNorm.get(j);
 				if (brFieldNorm == 0 || codeFieldNorm == 0)
 					features[index] = 0.0;
-				else  // if norm value doesn't equal zero, calculate field similarity
-					features[index] = Similarity.vsmSimilarityWithoutNorm(brFieldTokens, codeFieldTokens);
+				else  {// if norm value doesn't equal zero, calculate field similarity
+					features[index] = sim.vsmSimilarity(brFieldTokens, codeFieldTokens, false);
 				
-				if (!usingOkapi) // if calculate with BM25 method, do not need to divide norm value and multiply getLengthScore
-					features[index] = features[index] / (brFieldNorm * codeFieldNorm) * code.getLengthScore();
+					if (!usingOkapi) // if calculate with BM25 method, do not need to divide norm value and multiply getLengthScore
+						features[index] = features[index] / (brFieldNorm * codeFieldNorm) * code.getLengthScore();
+				}
 							
 				fieldSimilaritySum += features[index];
 				index++;
@@ -337,11 +341,11 @@ public class StructuralSimModelGenerator {
 		return (value - min) / (max - min);
 	}
 	
-	/** write ranking features for svm learn-to-rank */
-	public void writeRankingFeatures(String output) {
-		logger.info("Writing ranking features to " + output);
+	/** write ranking features for learn-to-rank */
+	public void writeRankingFeatures(String featuresPath) {
+		logger.info("Writing ranking features to " + featuresPath);
 		try {
-			BufferedWriter writer = new BufferedWriter(new FileWriter(output));
+			BufferedWriter writer = new BufferedWriter(new FileWriter(featuresPath));
 			int qid = 0;
 			for (Entry<BugReport, List<IntegratedScore>> entry : finals.entrySet()) {
 				qid++;
@@ -362,6 +366,22 @@ public class StructuralSimModelGenerator {
 			e.printStackTrace();
 		}
 	}
+	
+	/** write ranking features and bugID index for learn-to-rank */
+	public void writeRankingFeatures(String featuresPath, String indexPath) {
+		writeRankingFeatures(featuresPath);
+		try {
+			BufferedWriter indexWriter = new BufferedWriter(new FileWriter(indexPath));
+			int qid = 0;
+			for (Entry<BugReport, List<IntegratedScore>> entry : finals.entrySet()) {
+				qid++;
+				indexWriter.write("qid:" + qid + " bugID:" + entry.getKey().getBugID() + "\n");
+			}
+			indexWriter.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	} 
 
 	public boolean isNormalizePerBugReport() {
 		return normalizePerBugReport;
@@ -410,5 +430,23 @@ public class StructuralSimModelGenerator {
 	public void setNormalize(boolean normalize) {
 		this.normalize = normalize;
 	}
+
+	public boolean isUsingOkapi() {
+		return usingOkapi;
+	}
+
+	public void setUsingOkapi(boolean usingOkapi) {
+		this.usingOkapi = usingOkapi;
+	}
+
+	public Similarity getSim() {
+		return sim;
+	}
+
+	public void setSim(Similarity sim) {
+		this.sim = sim;
+	}
+	
+	
 	
 }

@@ -15,7 +15,7 @@ import edu.whu.pllab.buglocator.evaluation.SimpleEvaluator;
 public class BLUiRFoldResult {
 	
 	public static void main(String[] args) throws Exception {
-		String[] products = {"ASPECTJ", "SWT", "BIRT", "ECLIPSE_PLATFORM_UI", "TOMCAT", "JDT"};
+		String[] products = {"ASPECTJ"/*, "SWT", "BIRT", "ECLIPSE_PLATFORM_UI", "TOMCAT", "JDT"*/};
 		for (String product : products) {
 			Property property = Property.loadInstance(product);
 			String directory = new File(property.getWorkingDir(), "data_folder").getAbsolutePath();

@@ -41,6 +41,8 @@ public class TfidfVectorizer<T> {
 	/** idf value table */
 	private Hashtable<String, Double> inverseDocFrequencyTable;
 	
+	private double averDocumentLength;
+	
 	/** iterate sentence */
 	private SentenceIterator<T> iter;
 	
@@ -404,6 +406,31 @@ public class TfidfVectorizer<T> {
 		return contentTokens;
 	}
 	
+	/** Lemur Tfidf Vectorize with given documentLength and average document length */
+	public HashMap<String, TokenScore> okapiTfidfVectorize(String content, long documentLength, double aveDocumentLength, double k1, double b) {
+		HashMap<String, TokenScore> contentTokens = new HashMap<String, TokenScore>();
+		String[] tokens = content.split(" ");
+		HashMap<String, Integer> tokensCount = new HashMap<String, Integer>();
+		// get tokens term frequency
+		for (String token : tokens) {
+			if ((token = token.trim()).equals(""))
+				continue;
+			if (!tokensCount.containsKey(token))
+				tokensCount.put(token, 1);
+			else
+				tokensCount.put(token, tokensCount.get(token) + 1);
+		}
+		for (Entry<String, Integer> tokenEntry : tokensCount.entrySet()) {
+			String token = tokenEntry.getKey();
+			double okapiTf = okapiTfForWord(tokenEntry.getValue(), documentLength, aveDocumentLength, k1, b);
+			double smoothedIdf = smoothedIdfForWord(token);
+			double tfidf = MathUtils.tfidf(okapiTf, smoothedIdf);
+			TokenScore tokenScore = new TokenScore(token, okapiTf, smoothedIdf, tfidf);
+			contentTokens.put(token, tokenScore);
+		}
+		return contentTokens;
+	}
+	
 	/** calculate tokens content norm for contentTokens map */
 	public double calculateContentNorm(HashMap<String, TokenScore> contentTokens) {
 		double contentNorm = 0.0;
@@ -448,5 +475,14 @@ public class TfidfVectorizer<T> {
 	public void setB(double b) {
 		this.b = b;
 	}
+
+	public double getAverDocumentLength() {
+		double docLengthSum = 0.0;
+		for (Integer length : docLengthMap.values()) {
+			docLengthSum += length;
+		}
+		return docLengthSum / docLengthMap.size();
+	}
+	
 
 }

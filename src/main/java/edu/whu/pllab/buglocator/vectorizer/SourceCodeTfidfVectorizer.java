@@ -111,6 +111,7 @@ public class SourceCodeTfidfVectorizer {
 	 * ld represents the structural part content length, lc represents average length for the collection 
 	 */
 	public void okapiTfidfVectorizerForStrucInfo(HashMap<String, SourceCode> sourceCodeMap) {
+		/**
 		// caulcuate average part content length
 		int classPartLengthSum = 0;
 		int methodPartLengthSum = 0;
@@ -134,6 +135,26 @@ public class SourceCodeTfidfVectorizer {
 			corpus.setMethodPartTokens(tfidf.okapiTfidfVectorize(corpus.getMethodPart(), averMethodPartLength, k1, b));
 			corpus.setVariablePartTokens(tfidf.okapiTfidfVectorize(corpus.getVariablePart(), averVariablePartLength, k1, b));
 			corpus.setCommentPartTokens(tfidf.okapiTfidfVectorize(corpus.getCommentPart(), averCommentPartLength, k1, b));
+			// unused corpus norm
+			corpus.setClassCorpusNorm(tfidf.calculateContentNorm(corpus.getClassPartTokens()));
+			corpus.setMethodCorpusNorm(tfidf.calculateContentNorm(corpus.getMethodPartTokens()));
+			corpus.setVariableCorpusNorm(tfidf.calculateContentNorm(corpus.getVariablePartTokens()));
+			corpus.setCommentCorpusNorm(tfidf.calculateContentNorm(corpus.getCommentPartTokens()));
+		}
+		*/
+		double documentLengthSum = 0.0;
+		for (SourceCode sourceCode : sourceCodeMap.values()) {
+			SourceCodeCorpus corpus = sourceCode.getSourceCodeCorpus();
+			documentLengthSum += corpus.getContent().split(" ").length;
+		}
+		double averDocLength = documentLengthSum / sourceCodeMap.size();
+		for (SourceCode sourceCode : sourceCodeMap.values()) {
+			SourceCodeCorpus corpus = sourceCode.getSourceCodeCorpus();
+			int documentLength = corpus.getContent().split(" ").length;
+			corpus.setClassPartTokens(tfidf.okapiTfidfVectorize(corpus.getClassPart(), documentLength, averDocLength, k1, b));
+			corpus.setMethodPartTokens(tfidf.okapiTfidfVectorize(corpus.getMethodPart(), documentLength, averDocLength, k1, b));
+			corpus.setVariablePartTokens(tfidf.okapiTfidfVectorize(corpus.getVariablePart(), documentLength, averDocLength, k1, b));
+			corpus.setCommentPartTokens(tfidf.okapiTfidfVectorize(corpus.getCommentPart(), documentLength, averDocLength, k1, b));
 			// unused corpus norm
 			corpus.setClassCorpusNorm(tfidf.calculateContentNorm(corpus.getClassPartTokens()));
 			corpus.setMethodCorpusNorm(tfidf.calculateContentNorm(corpus.getMethodPartTokens()));

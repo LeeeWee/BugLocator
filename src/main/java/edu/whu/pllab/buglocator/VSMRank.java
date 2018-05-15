@@ -122,8 +122,9 @@ public class VSMRank {
 	public static List<IntegratedScore> calculateVSMSimilarity(BugReport bugReport,
 			HashMap<String, SourceCode> sourceCodeMap) {
 		List<IntegratedScore> integratedScoreList = new ArrayList<IntegratedScore>();
+		Similarity sim = new Similarity();
 		for (Entry<String, SourceCode> entry : sourceCodeMap.entrySet()) {
-			double similarity = Similarity.similarity(bugReport, entry.getValue(), Similarity.VSM);
+			double similarity = sim.similarity(bugReport, entry.getValue(), Similarity.VSM);
 //			for (Method method : entry.getValue().getMethodList()) {
 //				double methodSimilarity = Similarity.similarity(bugReport, method, Similarity.VSM);
 //				if (methodSimilarity > similarity)

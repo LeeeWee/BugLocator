@@ -20,10 +20,10 @@ public class BugReportRepositoryTest {
 		String output = "D:\\data\\working\\test\\BugReportRepositoryTest.txt";
 //		String output = "/Users/liwei/Documents/defect-prediction/working/BugReportTest.txt";
 		
-		String[] products = {"swt", "aspectj", "eclipse"};
-		String[] bugFilePaths = {"D:\\data\\buglocalization\\BRTracer\\Dataset\\SWTBugRepository.xml",
-								"D:\\data\\buglocalization\\BRTracer\\Dataset\\AspectJBugRepository.xml",
-								"D:\\data\\buglocalization\\BRTracer\\Dataset\\EclipseBugRepository.xml"};
+		String[] products = {"swt"/*, "aspectj", "eclipse"*/};
+		String[] bugFilePaths = {"D:\\data\\buglocalization\\BRTracer\\Dataset\\new_xml\\new_SWTBugRepository.xml",
+								"D:\\data\\buglocalization\\BRTracer\\Dataset\\new_xml\\new_AspectJBugRepository.xml",
+								"D:\\data\\buglocalization\\BRTracer\\Dataset\\new_xml\\new_EclipseBugRepository.xml"};
 		String[] sourceCodeDirs = {"D:\\data\\buglocalization\\BRTracer\\Dataset\\swt-3.1\\src",
 									"D:\\data\\buglocalization\\BRTracer\\Dataset\\aspectj",
 									"D:\\data\\buglocalization\\BRTracer\\Dataset\\eclipse-3.1\\plugins"};

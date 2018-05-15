@@ -160,12 +160,13 @@ public class RankByCollaborativeFilteringScore {
 	 */
 	public static List<SimilarBugReport> getSimilarBugReports(BugReport br, int top) {
 		List<SimilarBugReport> similarBugReports = new ArrayList<SimilarBugReport>();
+		Similarity sim = new Similarity();
 		PriorityQueue<SimilarBugReport> heap = new PriorityQueue<SimilarBugReport>(trainingBugReports.size(),
 				new SimilarBugReport.SimilarityComparator());
 		for (Entry<Integer, BugReport> entry : trainingBugReports.entrySet()) {
 			if (entry.getKey().equals(br.getBugID()))
 				continue;
-			double similarity = Similarity.similarity(br, entry.getValue(), BR_BR_SIMILARITY);
+			double similarity = sim.similarity(br, entry.getValue(), BR_BR_SIMILARITY);
 			heap.add(new SimilarBugReport(entry.getValue(), similarity));
 		}
 		if (top <= 0) {

@@ -52,6 +52,7 @@ public class StructureSimilarityLR {
 			
 			SourceCodeRepository codeRepo = new SourceCodeRepository();
 			SourceCodeTfidfVectorizer codeVectorizer = new SourceCodeTfidfVectorizer(codeRepo.getSourceCodeMap());
+			codeVectorizer.setUsingOkapi(false);
 			codeVectorizer.train();
 			codeVectorizer.calculateTokensWeight(codeRepo.getSourceCodeMap());
 			
@@ -67,24 +68,27 @@ public class StructureSimilarityLR {
 			StructuralSimModelGenerator generator = new StructuralSimModelGenerator();
 			generator.setNormalize(false);
 			generator.setNormalizePerBugReport(false);
+			codeVectorizer.setUsingOkapi(false);
 			generator.setSourceCodeMap(codeRepo.getSourceCodeMap());
 			
 			// train on the k fold and test on the k+1 fold, for k < n, n is folds total number
 			for (int i = 0; i < bugReportsMapList.size(); i++) {
-				/**
+				
+				if (i == bugReportsMapList.size() - 1)
+					break;
 				logger.info(String.format("Training on %d-th fold, test on %d-th fold", i, i + 1));
 				HashMap<Integer, BugReport> trainingBugReports =  bugReportsMapList.get(i);
 				HashMap<Integer, BugReport> testBugReports =  bugReportsMapList.get(i + 1);
-				*/
 				
-				logger.info(String.format("Test on %d-th fold", i));
-				HashMap<Integer, BugReport> trainingBugReports = new HashMap<Integer, BugReport>();
-				for (int j = 0; j < bugReportsMapList.size(); j++) {
-					if (j == i)
-						continue;
-					trainingBugReports.putAll(bugReportsMapList.get(j));
-				}
-				HashMap<Integer, BugReport> testBugReports = bugReportsMapList.get(i); 
+				
+//				logger.info(String.format("Test on %d-th fold", i));
+//				HashMap<Integer, BugReport> trainingBugReports = new HashMap<Integer, BugReport>();
+//				for (int j = 0; j < bugReportsMapList.size(); j++) {
+//					if (j == i)
+//						continue;
+//					trainingBugReports.putAll(bugReportsMapList.get(j));
+//				}
+//				HashMap<Integer, BugReport> testBugReports = bugReportsMapList.get(i); 
 				
 				// generate training data
 				generator.setTrainingBugReportsMap(trainingBugReports);
@@ -103,8 +107,8 @@ public class StructureSimilarityLR {
 				*/
 				
 				// ranknet training and predicting
-				RankerTest ranker = new RankerTest(RankerTest.RANKNET);
-				ranker.rankNetTrain();
+				RankerTest ranker = new RankerTest(RankerTest.COORDINATE_ASCENT);
+				ranker.train();
 				ranker.predict();
 				
 				/**

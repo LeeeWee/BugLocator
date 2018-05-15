@@ -18,10 +18,10 @@ public class SourceCodeReositoryTest {
 		String output = "D:\\data\\working\\test\\sourceCodeRepositoryTest.txt";
 //		String output = "/Users/liwei/Documents/defect-prediction/working/SourceCodeTest.txt";
 		
-		String[] products = {"swt", "aspectj", "eclipse"};
-		String[] bugFilePaths = {"D:\\data\\buglocalization\\BRTracer\\Dataset\\SWTBugRepository.xml",
-								"D:\\data\\buglocalization\\BRTracer\\Dataset\\AspectJBugRepository.xml",
-								"D:\\data\\buglocalization\\BRTracer\\Dataset\\EclipseBugRepository.xml"};
+		String[] products = {"swt"/*, "aspectj", "eclipse"*/};
+		String[] bugFilePaths = {"D:\\data\\buglocalization\\BRTracer\\Dataset\\new_xml\\new_SWTBugRepository.xml",
+								"D:\\data\\buglocalization\\BRTracer\\Dataset\\new_xml\\new_AspectJBugRepository.xml",
+								"D:\\data\\buglocalization\\BRTracer\\Dataset\\new_xml\\new_EclipseBugRepository.xml"};
 		String[] sourceCodeDirs = {"D:\\data\\buglocalization\\BRTracer\\Dataset\\swt-3.1\\src",
 									"D:\\data\\buglocalization\\BRTracer\\Dataset\\aspectj",
 									"D:\\data\\buglocalization\\BRTracer\\Dataset\\eclipse-3.1\\plugins"};
@@ -66,6 +66,30 @@ public class SourceCodeReositoryTest {
 			builder.append("\nContentNorm: " + sourceCode.getSourceCodeCorpus().getContentNorm() + "\n");
 			builder.append("ContentTokens: ");
 			for (TokenScore tokenScore : sourceCode.getSourceCodeCorpus().getContentTokens().values()) {
+				builder.append(String.format("%s(%f,%f,%f) ", tokenScore.getToken(), tokenScore.getTf(),
+						tokenScore.getIdf(), tokenScore.getTokenWeight()));
+			}
+			builder.append("\nClassPart: " + sourceCode.getSourceCodeCorpus().getClassPart() + "\n");
+			builder.append("ClassPartTokens: ");
+			for (TokenScore tokenScore : sourceCode.getSourceCodeCorpus().getClassPartTokens().values()) {
+				builder.append(String.format("%s(%f,%f,%f) ", tokenScore.getToken(), tokenScore.getTf(),
+						tokenScore.getIdf(), tokenScore.getTokenWeight()));
+			}
+			builder.append("\nMethodPart: " + sourceCode.getSourceCodeCorpus().getMethodPart() + "\n");
+			builder.append("MethodPartTokens: ");
+			for (TokenScore tokenScore : sourceCode.getSourceCodeCorpus().getMethodPartTokens().values()) {
+				builder.append(String.format("%s(%f,%f,%f) ", tokenScore.getToken(), tokenScore.getTf(),
+						tokenScore.getIdf(), tokenScore.getTokenWeight()));
+			}
+			builder.append("\nVariablePart: " + sourceCode.getSourceCodeCorpus().getVariablePart() + "\n");
+			builder.append("VariablePartTokens: ");
+			for (TokenScore tokenScore : sourceCode.getSourceCodeCorpus().getVariablePartTokens().values()) {
+				builder.append(String.format("%s(%f,%f,%f) ", tokenScore.getToken(), tokenScore.getTf(),
+						tokenScore.getIdf(), tokenScore.getTokenWeight()));
+			}
+			builder.append("\nCommentPart: " + sourceCode.getSourceCodeCorpus().getCommentPart() + "\n");
+			builder.append("CommentPartTokens: ");
+			for (TokenScore tokenScore : sourceCode.getSourceCodeCorpus().getCommentPartTokens().values()) {
 				builder.append(String.format("%s(%f,%f,%f) ", tokenScore.getToken(), tokenScore.getTf(),
 						tokenScore.getIdf(), tokenScore.getTokenWeight()));
 			}

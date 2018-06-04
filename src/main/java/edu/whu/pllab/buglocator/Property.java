@@ -108,7 +108,11 @@ public class Property {
 		String featuresExtremumPath = new File(workingDir, FEATURES_EXTREMUM_PATH).getAbsolutePath();
 		// append time string to evaluateLogPath
 		String timeStr = new SimpleDateFormat("yyyyMMddHHmmss").format(new Date());
-		String evaluateLogPath = new File(workingDir, "evaluate_" + timeStr + ".log").getAbsolutePath();
+		String evaluateLogPath = new File(workingDir, "evaluations" + File.separator + "evaluate_" + timeStr + ".log")
+				.getAbsolutePath();
+		File evaluateLogFile = new File(evaluateLogPath);
+		if (!evaluateLogFile.getParentFile().exists()) 
+			evaluateLogFile.mkdir();
 		int splitNum = 10;
 		if (Property.readProperty(targetProduct + "_" + "SPLIT_NUM") != null)
 			splitNum = Integer.parseInt(Property.readProperty(targetProduct + "_" + "SPLIT_NUM"));

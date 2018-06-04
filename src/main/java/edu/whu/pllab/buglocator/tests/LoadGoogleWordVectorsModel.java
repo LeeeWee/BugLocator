@@ -16,6 +16,7 @@ public class LoadGoogleWordVectorsModel {
 		WordVectors vec = WordVectorSerializer.loadStaticModel(new File(googleWordVectorsPath));
 		
 		INDArray vector = vec.getWordVectorMatrixNormalized("insurance");
+	
 		System.out.println("vector of 'insurance': " + vector);
 //		System.out.println("10 words cloest to 'insurance': " +lst);
 		

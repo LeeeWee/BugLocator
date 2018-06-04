@@ -29,21 +29,21 @@ public class LDATest {
 		for (String product : products) {
 			Property property = Property.loadInstance(product);
 			// initialize bugReport Repository
-			BugReportRepository brRepo = new BugReportRepository();
-			List<BugReport> sortedBugReports = brRepo.getSortedBugReports();
+//			BugReportRepository brRepo = new BugReportRepository();
+//			List<BugReport> sortedBugReports = brRepo.getSortedBugReports();
 			
 			File ldaModelDir = new File(property.getWorkingDir(), LDA_MODEL_DIR);
 			if (!ldaModelDir.exists())
 				ldaModelDir.mkdirs();
 			
 			// save bug reports' contents
-			String contentFilePath = new File(ldaModelDir, BR_CONTENT_PATH).getAbsolutePath();
-			BufferedWriter writer = new BufferedWriter(new FileWriter(contentFilePath));
-			writer.write(sortedBugReports.size() + "\n");
-			for (int i = 0; i < sortedBugReports.size(); i++) {
-				writer.write(sortedBugReports.get(i).getBugReportCorpus().getContent() + "\n");
-			}
-			writer.close();
+//			String contentFilePath = new File(ldaModelDir, BR_CONTENT_PATH).getAbsolutePath();
+//			BufferedWriter writer = new BufferedWriter(new FileWriter(contentFilePath));
+//			writer.write(sortedBugReports.size() + "\n");
+//			for (int i = 0; i < sortedBugReports.size(); i++) {
+//				writer.write(sortedBugReports.get(i).getBugReportCorpus().getContent() + "\n");
+//			}
+//			writer.close();
 			
 			// create an instance of LDACmdOption and initilize it 
 			LDACmdOption ldaOption = new LDACmdOption();
@@ -53,11 +53,20 @@ public class LDATest {
 			ldaOption.K = 10;
 			
 			//  initilize an Estimator using ldaOption and estimate
-			Estimator estimator = new Estimator();
-			estimator.init(ldaOption);
-			estimator.estimate();
+//			Estimator estimator = new Estimator();
+//			estimator.init(ldaOption);
+//			estimator.estimate();
 			
+			LDACmdOption option = new LDACmdOption();
+			option.inf = true;
+			option.dir = new File(property.getWorkingDir(), LDA_MODEL_DIR).getAbsolutePath();
+			option.modelName = "model-final";
+			option.dfile = BR_CONTENT_PATH;
 			
+			Inferencer inferencer = new Inferencer();
+			inferencer.niters = 1;
+			inferencer.init(option);
+			inferencer.inference();
 		}
 		
 	}

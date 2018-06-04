@@ -375,8 +375,8 @@ public class TfidfVectorizer<T> {
 	
 	/** Lemur Tfidf Vectorize without given average document length */
 	public HashMap<String, TokenScore> okapiTfidfVectorize(String content) {
-		double aveDocumentLength = averageDocLength();
-		return okapiTfidfVectorize(content, aveDocumentLength, k1, b);
+		averDocumentLength = averageDocLength();
+		return okapiTfidfVectorize(content, averDocumentLength, k1, b);
 	}
 	
 	/** Lemur Tfidf Vectorize with given average document length */

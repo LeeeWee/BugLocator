@@ -5,7 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
 
-import org.deeplearning4j.models.word2vec.Word2Vec;
+import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 import edu.whu.pllab.buglocator.common.BugReport;
@@ -22,14 +22,14 @@ public class Similarity {
 	public final static int WORDVECTORS = 3; 
 	public final static int PARAGRAPH_VECTOR = 4;
 	
-	private Word2Vec word2vec;
+	private WordVectors wordVectors;
 	
 	public Similarity() {
-		this.word2vec = null;
+		this.wordVectors = null;
 	}
 	
-	public Similarity(Word2Vec word2vec) {
-		this.word2vec = word2vec;
+	public Similarity(WordVectors wordVectors) {
+		this.wordVectors = wordVectors;
 	}
 	
 	/** similarity between BugReport and SourceCode by specific similarity type */
@@ -41,6 +41,9 @@ public class Similarity {
 				break;
 			case SYMMETRIC:
 				sim = symmetricSimilarity(br, code);
+				break;
+			case WORDVECTORS:
+				sim = symmetricSimilarityWithWordVectors(br, code);
 				break;
 			case PARAGRAPH_VECTOR:
 				sim = paragraphVectorSimilarity(br, code);
@@ -61,6 +64,9 @@ public class Similarity {
 			case SYMMETRIC:
 				sim = symmetricSimilarity(br1, br2);
 				break;
+			case WORDVECTORS:
+				sim = symmetricSimilarityWithWordVectors(br1, br2);
+				break;
 			case PARAGRAPH_VECTOR:
 				sim = paragraphVectorSimilarity(br1, br2);
 				break;
@@ -79,6 +85,9 @@ public class Similarity {
 				break;
 			case SYMMETRIC:
 				sim = symmetricSimilarity(br, method);
+				break;
+			case WORDVECTORS:
+				sim = symmetricSimilarityWithWordVectors(br, method);
 				break;
 			case PARAGRAPH_VECTOR:
 				sim = paragraphVectorSimilarity(br, method);
@@ -262,6 +271,8 @@ public class Similarity {
 		HashMap<String, TokenScore> codeTokens = code.getSourceCodeCorpus().getContentTokens();
 		double brContentNorm = br.getBugReportCorpus().getContentNorm();
 		double codeContentNorm = code.getSourceCodeCorpus().getContentNorm();
+		if (brContentNorm == 0 || codeContentNorm == 0)
+			return 0;
 		return (asymmetricSimilarity(brTokens, codeTokens, false) / brContentNorm
 				+ asymmetricSimilarity(codeTokens, brTokens, false) / codeContentNorm) / 2;
 	}
@@ -272,6 +283,8 @@ public class Similarity {
 		HashMap<String, TokenScore> br2Tokens = br2.getBugReportCorpus().getContentTokens();
 		double br1ContentNorm = br1.getBugReportCorpus().getContentNorm();
 		double br2ContentNorm = br2.getBugReportCorpus().getContentNorm();
+		if (br1ContentNorm == 0 || br2ContentNorm == 0)
+			return 0;
 		return (asymmetricSimilarity(br1Tokens, br2Tokens, false) / br1ContentNorm
 				+ asymmetricSimilarity(br2Tokens, br1Tokens, false) / br2ContentNorm) / 2;
 	}
@@ -282,6 +295,8 @@ public class Similarity {
 		HashMap<String, TokenScore> methodTokens = method.getContentTokens();
 		double brContentNorm = br.getBugReportCorpus().getContentNorm();
 		double methodContentNorm = method.getContentNorm();
+		if (brContentNorm == 0 || methodContentNorm == 0)
+			return 0;
 		return (asymmetricSimilarity(brTokens, methodTokens, false) / brContentNorm
 				+ asymmetricSimilarity(methodTokens, brTokens, false) / methodContentNorm) / 2;
 	}
@@ -330,6 +345,8 @@ public class Similarity {
 		HashMap<String, TokenScore> codeTokens = code.getSourceCodeCorpus().getContentTokens();
 		double brContentNorm = br.getBugReportCorpus().getContentNorm();
 		double codeContentNorm = code.getSourceCodeCorpus().getContentNorm();
+		if (brContentNorm == 0 || codeContentNorm == 0)
+			return 0;
 		return (asymmetricSimilarityWithWordVectors(brTokens, codeTokens, false) / brContentNorm
 				+ asymmetricSimilarityWithWordVectors(codeTokens, brTokens, false) / codeContentNorm) / 2;
 	}
@@ -340,6 +357,8 @@ public class Similarity {
 		HashMap<String, TokenScore> br2Tokens = br2.getBugReportCorpus().getContentTokens();
 		double br1ContentNorm = br1.getBugReportCorpus().getContentNorm();
 		double br2ContentNorm = br2.getBugReportCorpus().getContentNorm();
+		if (br1ContentNorm == 0 || br2ContentNorm == 0)
+			return 0;
 		return (asymmetricSimilarityWithWordVectors(br1Tokens, br2Tokens, false) / br1ContentNorm
 				+ asymmetricSimilarityWithWordVectors(br2Tokens, br1Tokens, false) / br2ContentNorm) / 2;
 	}
@@ -350,6 +369,8 @@ public class Similarity {
 		HashMap<String, TokenScore> methodTokens = method.getContentTokens();
 		double brContentNorm = br.getBugReportCorpus().getContentNorm();
 		double methodContentNorm = method.getContentNorm();
+		if (brContentNorm == 0 || methodContentNorm == 0)
+			return 0;
 		return (asymmetricSimilarityWithWordVectors(brTokens, methodTokens, false) / brContentNorm
 				+ asymmetricSimilarityWithWordVectors(methodTokens, brTokens, false) / methodContentNorm) / 2;
 	}
@@ -375,13 +396,17 @@ public class Similarity {
 		if (tokenScoreMap1.size() == 0 || tokenScoreMap2.size() == 0) 
 			return 0.0;
 		for (Entry<String, TokenScore> entry1 : tokenScoreMap1.entrySet()) {
-			if (!word2vec.hasWord(entry1.getKey()))
+			if (!wordVectors.hasWord(entry1.getKey()))
 				continue;
 			double maxSim = 0.0;
 			for (Entry<String, TokenScore> entry2 : tokenScoreMap2.entrySet()) {
-				double sim = word2vec.hasWord(entry2.getKey()) ? word2vec.similarity(entry1.getKey(), entry2.getKey()) : 0;
-				if (sim > maxSim)
-					maxSim = sim;
+				if (entry1.getKey().equals(entry2.getKey()))
+					maxSim = 1.0;
+				else {
+					double sim = wordVectors.hasWord(entry2.getKey()) ? wordVectors.similarity(entry1.getKey(), entry2.getKey()) : 0;
+					if (sim > maxSim)
+						maxSim = sim;
+				}
 			}
 			simSum += maxSim;
 			if (norm)
@@ -411,12 +436,12 @@ public class Similarity {
 		return Transforms.cosineSim(br.getParagraphVector(), method.getParagraphVector());
 	}
 
-	public Word2Vec getWord2vec() {
-		return word2vec;
+	public WordVectors getWordVectors() {
+		return wordVectors;
 	}
 
-	public void setWord2vec(Word2Vec word2vec) {
-		this.word2vec = word2vec;
+	public void setWord2vec(WordVectors wordVectors) {
+		this.wordVectors = wordVectors;
 	}
 	
 }

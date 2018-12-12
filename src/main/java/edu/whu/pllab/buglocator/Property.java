@@ -10,45 +10,45 @@ import java.util.Properties;
 public class Property {
 	
 	
-	private final static String BR_TFIDF_PATH = "bugReport.tfidf";
-	private final static String CODE_TFIDF_PATH = "sourceCode.tfidf";
-	private final static String BR_PARAGRAPH_VECTOR_PATH = "bugReport.v";
-	private final static String CODE_PARAGRAPH_VECTOR_PATH = "sourceCode.v";
-	private final static String CODE_CHANGE_HISTORY_PATH = "sourceCode.history";
-	private final static String TRAINING_FEATURES_PATH = "train.dat";
-	private final static String TEST_FEATURES_PATH = "test.dat";
-	private final static String SVM_RANK_MODEL_PATH = "model.dat";
-	private final static String PREDICTIONS_PATH = "predictions";
-	private final static String CODE_REPO_XML_PATH = "codeRepository.xml";
-	private final static String FEATURES_EXTREMUM_PATH = "features.params";
+	protected final static String BR_TFIDF_PATH = "bugReport.tfidf";
+	protected final static String CODE_TFIDF_PATH = "sourceCode.tfidf";
+	protected final static String BR_PARAGRAPH_VECTOR_PATH = "bugReport.v";
+	protected final static String CODE_PARAGRAPH_VECTOR_PATH = "sourceCode.v";
+	protected final static String CODE_CHANGE_HISTORY_PATH = "sourceCode.history";
+	protected final static String TRAINING_FEATURES_PATH = "train.dat";
+	protected final static String TEST_FEATURES_PATH = "test.dat";
+	protected final static String SVM_RANK_MODEL_PATH = "model.dat";
+	protected final static String PREDICTIONS_PATH = "predictions";
+	protected final static String CODE_REPO_XML_PATH = "codeRepository.xml";
+	protected final static String FEATURES_EXTREMUM_PATH = "features.params";
 	
 	public final static int THREAD_COUNT = Runtime.getRuntime().availableProcessors();
 	public final static String STOPWORDS_PATH = Property.readProperty("STOPWORDS_PATH");
 	public final static String SVM_RANK_LEARN_TOOL_PATH = Property.readProperty("SVM_RANK_LEARN_TOOL_PATH");
 	public final static String SVM_RANK_CLASSIFY_TOOL_PATH = Property.readProperty("SVM_RANK_CLASSIFY_TOOL_PATH");
-	public final static boolean USE_STRUCTURED_INFORMATION = Boolean.parseBoolean(Property.readProperty("USE_STRUCTURED_INFORMATION"));
+	public static boolean USE_STRUCTURED_INFORMATION = Boolean.parseBoolean(Property.readProperty("USE_STRUCTURED_INFORMATION"));
 
 	private static Property p = null;
 	
-	private String product;
-	private String bugFilePath;
-	private String sourceCodeDir;
-	private String wordVectorPath;
-	private String workingDir;
-	private String brTfidfModelPath;
-	private String codeTfidfModelPath;
-	private String brParagraphVectorPath;
-	private String codeParagraphVectorPath;
-	private String codeChangeHistoryPath;
-	private String trainingFeaturesPath;
-	private String testFeaturesPath;
-	private String svmRankModelPath;
-	private String predictionsPath;
-	private String codeRepositoryXMLPath;
-	private String featuresExtremumPath;
-	private String evaluateLogPath;
+	protected String product;
+	protected String bugFilePath;
+	protected String sourceCodeDir;
+	protected String wordVectorPath;
+	protected String workingDir;
+	protected String brTfidfModelPath;
+	protected String codeTfidfModelPath;
+	protected String brParagraphVectorPath;
+	protected String codeParagraphVectorPath;
+	protected String codeChangeHistoryPath;
+	protected String trainingFeaturesPath;
+	protected String testFeaturesPath;
+	protected String svmRankModelPath;
+	protected String predictionsPath;
+	protected String codeRepositoryXMLPath;
+	protected String featuresExtremumPath;
+	protected String evaluateLogPath;
 	
-	private int splitNum;
+	protected int splitNum;
 	
 	/**
 	 * Constructor
@@ -61,7 +61,7 @@ public class Property {
 	 * read property by key from buglocator.properties file
 	 * @return value corresponded to given key
 	 */
-	private static String readProperty(String key) {
+	protected static String readProperty(String key) {
 		Properties properties = new Properties();
 		try {
 			properties.load(new FileInputStream("buglocator.properties"));

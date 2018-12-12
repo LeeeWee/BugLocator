@@ -6,23 +6,19 @@ import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
 import java.util.Map.Entry;
 import java.util.TreeSet;
 
 import edu.whu.pllab.buglocator.Property;
 import edu.whu.pllab.buglocator.common.BugReport;
 import edu.whu.pllab.buglocator.common.BugReportRepository;
-import edu.whu.pllab.buglocator.common.Method;
 import edu.whu.pllab.buglocator.common.SourceCode;
 import edu.whu.pllab.buglocator.common.SourceCodeRepository;
-import edu.whu.pllab.buglocator.common.TokenScore;
 import edu.whu.pllab.buglocator.evaluation.Evaluator;
 import edu.whu.pllab.buglocator.rankingmodel.IntegratedScore;
 import edu.whu.pllab.buglocator.similarity.Similarity;
 import edu.whu.pllab.buglocator.vectorizer.BugReportTfidfVectorizer;
 import edu.whu.pllab.buglocator.vectorizer.SourceCodeTfidfVectorizer;
-import edu.whu.pllab.buglocator.vectorizer.TfidfVectorizer;
 
 public class VSMRankTestOnBRTracerData {
 

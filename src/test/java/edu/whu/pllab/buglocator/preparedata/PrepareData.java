@@ -17,7 +17,6 @@ import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import edu.whu.pllab.buglocator.BugLocator;
 import edu.whu.pllab.buglocator.Property;
 import edu.whu.pllab.buglocator.common.BugReport;
 import edu.whu.pllab.buglocator.common.BugReportRepository;
@@ -26,7 +25,7 @@ import edu.whu.pllab.buglocator.utils.FileUtil;
 
 public class PrepareData {
 	
-	private static final Logger logger = LoggerFactory.getLogger(BugLocator.class);
+	private static final Logger logger = LoggerFactory.getLogger(PrepareData.class);
 	
 	public static void main(String[] args) throws Exception {
 //		prepareData();

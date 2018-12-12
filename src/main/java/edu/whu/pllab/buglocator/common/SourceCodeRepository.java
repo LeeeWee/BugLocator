@@ -41,6 +41,7 @@ import edu.whu.pllab.buglocator.Property;
 import edu.whu.pllab.buglocator.astparser.FileParser;
 import edu.whu.pllab.buglocator.utils.FileUtil;
 import edu.whu.pllab.buglocator.utils.Stemmer;
+import edu.whu.pllab.buglocator.utils.Stopword;
 
 public class SourceCodeRepository {
 
@@ -294,6 +295,8 @@ public class SourceCodeRepository {
 				StringBuffer nameBuf = new StringBuffer();
 			    for (String word : classNameAndMethodName.split(" ")) {
 				    String stemWord = Stemmer.stem(word.toLowerCase());
+				    if (Stopword.isEnglishStopword(stemWord) || Stopword.isJavaKeyword(stemWord) || Stopword.isProjectKeyword(stemWord))
+						continue;
 				    nameBuf.append(stemWord);
 				    nameBuf.append(" ");
 			    }

@@ -1,11 +1,9 @@
 package edu.whu.pllab.buglocator.tests;
 
 import java.io.File;
-import java.util.Collection;
 
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
-import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 public class LoadGoogleWordVectorsModel {

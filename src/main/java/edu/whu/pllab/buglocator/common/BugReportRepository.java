@@ -60,7 +60,7 @@ public class BugReportRepository {
 		else 
 			bugReports = parseExcel(new File(brFilePath));
 		cleanText();
-		saveSourceCodeChangeHistory(extractSourceCodeChangeHistory(),property.getCodeChangeHistoryPath());
+		saveSourceCodeChangeHistory(extractSourceCodeChangeHistory(), property.getCodeChangeHistoryPath());
 	}
 	
 	/** get BugReportsMap */

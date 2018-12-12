@@ -15,10 +15,8 @@ import edu.whu.pllab.buglocator.common.SourceCodeRepository;
 import edu.whu.pllab.buglocator.evaluation.Evaluator;
 import edu.whu.pllab.buglocator.evaluation.ExperimentResult;
 import edu.whu.pllab.buglocator.rankingmodel.IntegratedScore;
-import edu.whu.pllab.buglocator.rankingmodel.SVMRank;
 import edu.whu.pllab.buglocator.rankingmodel.StructuralSimModelGenerator;
 import edu.whu.pllab.buglocator.tests.RankerTest;
-import edu.whu.pllab.buglocator.tests.SimpleEvaluate;
 import edu.whu.pllab.buglocator.utils.BugReportsSplitter;
 import edu.whu.pllab.buglocator.vectorizer.BugReportTfidfVectorizer;
 import edu.whu.pllab.buglocator.vectorizer.SourceCodeTfidfVectorizer;
@@ -33,7 +31,7 @@ public class StructureSimilarityLR {
 		
 //		double[] cArrays = new double[]{ 0.001, 0.005, 0.01, 0.05, 0.1, 0.25, 0.5, 1.0, 2.0, 5.0, 10.0, 
 //				20.0, 50.0, 100.0, 200.0, 500.0};
-		double c = 0.001;
+//		double c = 0.001;
 //		for (double c : cArrays) {
 		
 		for (String product : products) {
@@ -56,9 +54,7 @@ public class StructureSimilarityLR {
 			codeVectorizer.train();
 			codeVectorizer.calculateTokensWeight(codeRepo.getSourceCodeMap());
 			
-			// train tfidf model using training bug reports
 			BugReportTfidfVectorizer brVectorizer = new BugReportTfidfVectorizer(codeVectorizer.getTfidf());
-			// TfidfVectorizer training and test bug reports
 			brVectorizer.calculateTokensWeight(brRepo.getBugReports());
 			
 			// split bug reports 

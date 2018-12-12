@@ -369,7 +369,7 @@ public class TfidfVectorizer<T> {
 			double tfidf = MathUtils.tfidf(tf, idf);
 			TokenScore tokenScore = new TokenScore(token, tf, idf, tfidf);
 			contentTokens.put(token, tokenScore);
-		}
+		} 
 		return contentTokens;
 	}
 	

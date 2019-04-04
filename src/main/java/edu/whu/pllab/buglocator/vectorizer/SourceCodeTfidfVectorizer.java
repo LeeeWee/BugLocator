@@ -27,7 +27,6 @@ public class SourceCodeTfidfVectorizer {
 	private ScoreType tokenScoreType = ScoreType.WFIDF;
 	
 	/** parameters of calculating structural information Okapi tf score*/
-	private boolean usingOkapi = false;
 	private double k1 = 1.0;
 	private double b = 0.3;
 
@@ -68,11 +67,11 @@ public class SourceCodeTfidfVectorizer {
 			for (Method method : sourceCode.getMethodList()) 
 				calculateTokensWeight(method);
 			
-			if (useStructuredInformation && (!usingOkapi)) {
+			if (useStructuredInformation && (tokenScoreType != ScoreType.OKAPITFIDF)) {
 				calculateForStructuredInformation(sourceCode);
 			}
 		}
-		if (useStructuredInformation && usingOkapi) {
+		if (useStructuredInformation && (tokenScoreType == ScoreType.OKAPITFIDF)) {
 			okapiTfidfVectorizerForStrucInfo(sourceCodeMap);
 		}
 	}
@@ -226,14 +225,6 @@ public class SourceCodeTfidfVectorizer {
 
 	public void setB(double b) {
 		this.b = b;
-	}
-
-	public boolean isUsingOkapi() {
-		return usingOkapi;
-	}
-
-	public void setUsingOkapi(boolean usingOkapi) {
-		this.usingOkapi = usingOkapi;
 	}
 
 	public boolean isUseStructuredInformation() {

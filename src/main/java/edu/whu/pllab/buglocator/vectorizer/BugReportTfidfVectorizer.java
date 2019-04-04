@@ -28,7 +28,6 @@ public class BugReportTfidfVectorizer {
 	private ScoreType tokenScoreType = ScoreType.WFIDF;
 	
 	/** parameters of calculating structural information Okapi tf score*/
-	private boolean usingOkapi = false;
 	private double k3 = 1000;
 	private double b = 0;
 	
@@ -57,7 +56,7 @@ public class BugReportTfidfVectorizer {
 	public void calculateTokensWeight(HashMap<Integer, BugReport> bugReportsMap) {
 		logger.info("Calculating tokens weight for input bug reports...");
 		for (Entry<Integer, BugReport> entry : bugReportsMap.entrySet()) {
-			if (!usingOkapi)
+			if (tokenScoreType != ScoreType.OKAPITFIDF)
 				calculateTokensWeight(entry.getValue());
 			else 
 				calculateTokensWeightByOkapi(entry.getValue());
@@ -130,7 +129,7 @@ public class BugReportTfidfVectorizer {
 		this.tokenScoreType = tokenScoreType;
 	}
 	
-	public void setTfidf(TfidfVectorizer<String> codeTfidf) {
+	public void setCodeTfidf(TfidfVectorizer<String> codeTfidf) {
 		usingCodeTfidf = true;
 		this.codeTfidf = codeTfidf;
 	}
@@ -138,13 +137,4 @@ public class BugReportTfidfVectorizer {
 	public void setUsingCodeTfidf(boolean usingCodeTfidf) {
 		this.usingCodeTfidf = usingCodeTfidf;
 	}
-
-	public boolean isUsingOkapi() {
-		return usingOkapi;
-	}
-
-	public void setUsingOkapi(boolean usingOkapi) {
-		this.usingOkapi = usingOkapi;
-	}
-	
 }

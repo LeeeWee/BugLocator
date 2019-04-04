@@ -315,13 +315,11 @@ public class SourceCodeRepository {
 		
 		/** set structured information for input sourceCOdeCorpus */
 		public void setStructuredInformation(SourceCodeCorpus sourceCodeCorpus, FileParser parser) {
-			String classPart = parser.getStructuredContentWithFullyIdentifier(FileParser.CLASS_PART) + " " +
-					parser.getStructuredContent(FileParser.CLASS_PART);
-			classPart = Stemmer.stemContent(classPart);
-			String methodPart = parser.getStructuredContentWithFullyIdentifier(FileParser.METHOD_PART) + " " +
-					parser.getStructuredContent(FileParser.METHOD_PART);
-			methodPart = Stemmer.stemContent(methodPart);
-			String variablePart = parser.getStructuredContent(FileParser.VARIABLE_PART);
+			String classPart = Stemmer.stemContent(parser.getStructuredContentWithFullyIdentifier(FileParser.CLASS_PART))
+					+ " " + parser.getStructuredContent(FileParser.CLASS_PART);
+			String methodPart = Stemmer.stemContent(parser.getStructuredContentWithFullyIdentifier(FileParser.METHOD_PART))
+					+ " " + parser.getStructuredContent(FileParser.METHOD_PART);
+			String variablePart = parser.getStructuredContent(FileParser.IDENTIFIER_PART);
 			String commentPart = parser.getStructuredContent(FileParser.COMMENT_PART);
 			sourceCodeCorpus.setClassPart(classPart);
 			sourceCodeCorpus.setMethodPart(methodPart);

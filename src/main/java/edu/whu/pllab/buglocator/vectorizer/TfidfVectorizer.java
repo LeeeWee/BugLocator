@@ -457,10 +457,9 @@ public class TfidfVectorizer<T> {
     }
     
     public double okapiTfForWord(long wordCount, long documentLength, double aveDocumentLength, double k1, double b) {
-    	if (b == 0)
+    	if (aveDocumentLength == 0)
     		return k1 * wordCount / (wordCount + k1);
-    	else 
-    		return (k1 * wordCount / (wordCount + k1 * (1 - b + b * documentLength / aveDocumentLength)));
+		return (k1 * wordCount / (wordCount + k1 * (1 - b + b * documentLength / aveDocumentLength)));
     }
     
     public double smoothedIdfForWord(String word) {

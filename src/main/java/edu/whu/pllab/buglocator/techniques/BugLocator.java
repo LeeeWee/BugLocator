@@ -1,11 +1,11 @@
 package edu.whu.pllab.buglocator.techniques;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -41,14 +41,14 @@ public class BugLocator {
 	public static void main(String[] args) throws Exception {
 		for (String product : products) {
 			logger.info("Current Product: " + product);
-			locateBug(product);
+			locate(product);
 		}
 	}
 	
-	public static void locateBug(String product) throws Exception {
-		Property.USE_STRUCTURED_INFORMATION = true;
+	public static void locate(String product) throws Exception {
+		Property.USE_STRUCTURED_INFORMATION = false;
 		Property property = Property.loadInstance(product);
-		property.setCodeRepositoryXMLPath(new File(property.getWorkingDir(), "codeRepository_structured.xml").getAbsolutePath());
+//		property.setCodeRepositoryXMLPath(new File(property.getWorkingDir(), "codeRepository_structured.xml").getAbsolutePath());
 
 		// record evaluate result
 //		BufferedWriter logWriter = new BufferedWriter(new FileWriter(property.getEvaluateLogPath()));
@@ -56,23 +56,85 @@ public class BugLocator {
 		// initialize bugReport repository and source code repository
 		BugReportRepository brRepo = new BugReportRepository();
 		SourceCodeRepository codeRepo = new SourceCodeRepository();
-		codeRepo.saveSourceCodeRepoToXML(property.getCodeRepositoryXMLPath(), product);
-		
-		// calculate source code tokens weight
-		SourceCodeTfidfVectorizer codeVectorizer = new SourceCodeTfidfVectorizer(codeRepo.getSourceCodeMap());
-		codeVectorizer.train();
-		codeVectorizer.calculateTokensWeight(codeRepo.getSourceCodeMap());
-		
-		// calculate bug reports tokens weight
-		BugReportTfidfVectorizer brVectorizer = new BugReportTfidfVectorizer(codeVectorizer.getTfidf());
-		brVectorizer.calculateTokensWeight(brRepo.getBugReports());
+//		codeRepo.saveSourceCodeRepoToXML(property.getCodeRepositoryXMLPath(), product);
 		
 		sourceCodeMap = codeRepo.getSourceCodeMap();
 		bugReports = brRepo.getBugReports();
 		
-		computeLengthScore();
+//		computeLengthScore();
 		
-		evaluate();
+		execute();
+	}
+	
+	public static void execute() throws InterruptedException, ExecutionException {
+		HashMap<BugReport, List<IntegratedScore>> integratedScoreMap = new HashMap<BugReport, List<IntegratedScore>>(); 
+		HashMap<BugReport, HashMap<String, Double>> VSMScoreMap = null;
+		HashMap<BugReport, HashMap<String, Double>> simiScoreMap = null;
+		
+		// calculate source code tokens weight
+		SourceCodeTfidfVectorizer codeVectorizer = new SourceCodeTfidfVectorizer(sourceCodeMap);
+		codeVectorizer.train();
+		codeVectorizer.calculateTokensWeight(sourceCodeMap);
+		
+		// calculate bug reports tokens weight using code corpus's tfidf model
+		BugReportTfidfVectorizer brVectorizer = new BugReportTfidfVectorizer(codeVectorizer.getTfidf());
+		brVectorizer.calculateTokensWeight(bugReports);
+		
+		// calculate VSMScore map
+		int count = 0;
+		VSMScoreMap = new HashMap<BugReport, HashMap<String, Double>>();
+		ExecutorService vsmES = Executors.newFixedThreadPool(Property.THREAD_COUNT);
+		for (Entry<Integer, BugReport> brEntry : bugReports.entrySet()) {
+			count++;
+			Callable<HashMap<String, Double>> vsmScoreCalculator = new VSMScoreCalculator(brEntry.getValue(), count);
+			Future<HashMap<String, Double>> future = vsmES.submit(vsmScoreCalculator);
+			VSMScoreMap.put(brEntry.getValue(), future.get());
+		}
+		vsmES.shutdown();
+		while (!vsmES.isTerminated()) {
+		}
+		
+		// calculate SimiScore map if needed
+		if (usingSimilarBugReports) {
+			
+			// train bug reports' tfidf model and re-calculate bug reports' weight
+			BugReportTfidfVectorizer newBRVectorizer = new BugReportTfidfVectorizer(bugReports);
+			newBRVectorizer.train();
+			newBRVectorizer.calculateTokensWeight(bugReports);
+			
+			count = 0;
+			simiScoreMap = new HashMap<BugReport, HashMap<String, Double>>();
+			ExecutorService simiES = Executors.newFixedThreadPool(Property.THREAD_COUNT);
+			for (Entry<Integer, BugReport> brEntry : bugReports.entrySet()) {
+				count++;
+				Callable<HashMap<String, Double>> simiScoreCalculator = new SimiScoreCalculator(brEntry.getValue(), count);
+				Future<HashMap<String, Double>> future = simiES.submit(simiScoreCalculator);
+				simiScoreMap.put(brEntry.getValue(), future.get());
+			}
+			simiES.shutdown();
+			while (!simiES.isTerminated()) {
+			}
+		}
+		
+		// calculate final score
+		ExecutorService finalES = Executors.newFixedThreadPool(Property.THREAD_COUNT);
+		for (Entry<Integer, BugReport> brEntry : bugReports.entrySet()) {
+			BugReport br = brEntry.getValue();
+			Callable<List<IntegratedScore>> finalScoreCalculator;
+			if (usingSimilarBugReports)
+				finalScoreCalculator = new FinalScoreCalculator(br, VSMScoreMap.get(br), simiScoreMap.get(br));
+			else 
+				finalScoreCalculator = new FinalScoreCalculator(br, VSMScoreMap.get(br), null);
+			Future<List<IntegratedScore>> future = finalES.submit(finalScoreCalculator);
+			integratedScoreMap.put(brEntry.getValue(), future.get());
+		}
+		finalES.shutdown();
+		while (!finalES.isTerminated()) {
+		}
+		
+		// evaluate
+		Evaluator evaluator = new Evaluator(integratedScoreMap);
+		evaluator.evaluate();
 	}
 	
 	/** compute length score for source code file */
@@ -113,44 +175,63 @@ public class BugLocator {
 		return 1.0D / (1.0D + Math.exp(-len));
 	}
 	
-	
-	public static void evaluate() throws Exception {
-		int count = 0;
-		HashMap<BugReport, List<IntegratedScore>> integratedScoreMap = new HashMap<BugReport, List<IntegratedScore>>(); 
-		ExecutorService executor = Executors.newFixedThreadPool(Property.THREAD_COUNT);
-		for (Entry<Integer, BugReport> brEntry : bugReports.entrySet()) {
-			count++;
-			Callable<List<IntegratedScore>> worker = new WorkerThread(brEntry.getValue(), count);
-			Future<List<IntegratedScore>> future = executor.submit(worker);
-			integratedScoreMap.put(brEntry.getValue(), future.get());
-		}
-		executor.shutdown();
-		while (!executor.isTerminated()) {
-		}
-		
-		// evaluate
-		Evaluator evaluator = new Evaluator(integratedScoreMap);
-		evaluator.evaluate();
-	}
-	
-	private static class WorkerThread implements Callable<List<IntegratedScore>> {
-		
+	// Worker thread for calculating VSMScore
+	private static class VSMScoreCalculator implements Callable<HashMap<String, Double>> {
+
 		private BugReport br;
 		private int index;
 		
-		public WorkerThread(BugReport br, int index) {
+		public VSMScoreCalculator(BugReport br, int index) {
 			this.br = br;
 			this.index = index;
 		}
-
+		
 		@Override
-		public List<IntegratedScore> call() throws Exception {
+		public HashMap<String, Double> call() throws Exception {
 			if (index % 100 == 0) 
 				logger.info(index + " bug reports handled.");
 			HashMap<String, Double> VSMScoreMap = calculateVSMScore(br, sourceCodeMap);
-			HashMap<String, Double> simiScoreMap = null;
-			if (usingSimilarBugReports)
-				simiScoreMap = calculateSimiScore(br, bugReports);
+			return VSMScoreMap;
+		}
+		
+	}
+	
+	// Worker thread for calculating SimiScore
+	private static class SimiScoreCalculator implements Callable<HashMap<String, Double>> {
+
+		private BugReport br;
+		private int index;
+		
+		public SimiScoreCalculator(BugReport br, int index) {
+			this.br = br;
+			this.index = index;
+		}
+		
+		@Override
+		public HashMap<String, Double> call() throws Exception {
+			if (index % 100 == 0) 
+				logger.info(index + " bug reports handled.");
+			HashMap<String, Double> simiScoreMap = calculateSimiScore(br, bugReports);
+			return simiScoreMap;
+		}
+		
+	}
+	
+	// Worker thread for evaluating
+	private static class FinalScoreCalculator implements Callable<List<IntegratedScore>> {
+
+		private BugReport br;
+		private HashMap<String, Double> VSMScoreMap;
+		private HashMap<String, Double> simiScoreMap;
+		
+		public FinalScoreCalculator(BugReport br, HashMap<String, Double> VSMScoreMap, HashMap<String, Double> simiScoreMap) {
+			this.br = br;
+			this.VSMScoreMap = VSMScoreMap;
+			this.simiScoreMap = simiScoreMap;
+		}
+		
+		@Override
+		public List<IntegratedScore> call() throws Exception {
 			List<IntegratedScore> integratedScores = calculateFinalScore(br, VSMScoreMap, simiScoreMap);
 			return integratedScores;
 		}

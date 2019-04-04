@@ -50,7 +50,6 @@ public class StructureSimilarityLR {
 			
 			SourceCodeRepository codeRepo = new SourceCodeRepository();
 			SourceCodeTfidfVectorizer codeVectorizer = new SourceCodeTfidfVectorizer(codeRepo.getSourceCodeMap());
-			codeVectorizer.setUsingOkapi(false);
 			codeVectorizer.train();
 			codeVectorizer.calculateTokensWeight(codeRepo.getSourceCodeMap());
 			
@@ -64,7 +63,6 @@ public class StructureSimilarityLR {
 			StructuralSimModelGenerator generator = new StructuralSimModelGenerator();
 			generator.setNormalize(false);
 			generator.setNormalizePerBugReport(false);
-			codeVectorizer.setUsingOkapi(false);
 			generator.setSourceCodeMap(codeRepo.getSourceCodeMap());
 			
 			// train on the k fold and test on the k+1 fold, for k < n, n is folds total number

@@ -58,7 +58,6 @@ public class SimilarityComparator {
 			
 			SourceCodeRepository codeRepo = new SourceCodeRepository();
 			SourceCodeTfidfVectorizer codeVectorizer = new SourceCodeTfidfVectorizer(codeRepo.getSourceCodeMap());
-			codeVectorizer.setUsingOkapi(false);
 			codeVectorizer.setTokenScoreType(ScoreType.NTFIDF);
 			codeVectorizer.train();
 			codeVectorizer.calculateTokensWeight(codeRepo.getSourceCodeMap());

@@ -15,6 +15,7 @@ import org.eclipse.jdt.core.dom.Javadoc;
 import org.eclipse.jdt.core.dom.LineComment;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.PackageDeclaration;
+import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
@@ -34,18 +35,21 @@ public class FileParser {
 	private String allMethodNames;
 	private String allVariableNames;
 	private String allComments;
+	private String allIdentifierNames;
 	private ArrayList<Method> allMethodList;
 	
 	public static final int CLASS_PART = 1;
 	public static final int METHOD_PART = 2;
 	public static final int VARIABLE_PART = 3;
 	public static final int COMMENT_PART = 4;
+	public static final int IDENTIFIER_PART = 5;
 	
 	public FileParser(File file) {
 		allClassNames = null;
 		allMethodNames = null;
 		allVariableNames = null;
 		allComments = null;
+		allIdentifierNames = null;
 		allMethodList = null;
 		
 		ASTCreator creator = new ASTCreator(file);
@@ -81,6 +85,9 @@ public class FileParser {
 			break;
 		case COMMENT_PART:
 			content =  getAllComments();
+			break;
+		case IDENTIFIER_PART:
+			content = getAllIdentifierNames();
 			break;
 		}
 		return content;
@@ -247,6 +254,32 @@ public class FileParser {
 		
 			allVariableNames = allVariableNames.trim(); 
 			return allVariableNames;	
+		}
+	}
+	
+	public String getAllIdentifierNames() {
+		if (allIdentifierNames != null) {
+			return allIdentifierNames;
+		} else {
+			final ArrayList<String> identifierNameList = new ArrayList<String>();
+			
+	    	compilationUnit.accept(new ASTVisitor() {
+	            public boolean visit(SimpleName node)
+	            {
+	            	identifierNameList.add(node.getFullyQualifiedName());
+	                return super.visit(node);
+	            }
+	    	});
+	    	
+	    	allIdentifierNames = "";
+	    	for (Iterator<String> iterator = identifierNameList.iterator(); iterator.hasNext();) {
+				String identifierName = (String) iterator.next();
+				allIdentifierNames = (new StringBuilder(String.valueOf(allIdentifierNames)))
+						.append(identifierName).append(" ").toString();
+			}
+		
+	    	allIdentifierNames = allIdentifierNames.trim(); 
+			return allIdentifierNames;	
 		}
 	}
 

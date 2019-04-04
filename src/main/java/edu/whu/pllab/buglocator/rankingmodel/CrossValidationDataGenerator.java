@@ -36,13 +36,11 @@ public class CrossValidationDataGenerator {
 		
 		SourceCodeRepository codeRepo = new SourceCodeRepository();
 		SourceCodeTfidfVectorizer codeVectorizer = new SourceCodeTfidfVectorizer(codeRepo.getSourceCodeMap());
-		codeVectorizer.setUsingOkapi(false);
 		codeVectorizer.train();
 		codeVectorizer.calculateTokensWeight(codeRepo.getSourceCodeMap());
 		
 		// train tfidf model using training bug reports
 		BugReportTfidfVectorizer brVectorizer = new BugReportTfidfVectorizer(codeVectorizer.getTfidf());
-		brVectorizer.setUsingOkapi(false);
 		// TfidfVectorizer training and test bug reports
 		brVectorizer.calculateTokensWeight(brRepo.getBugReports());
 		

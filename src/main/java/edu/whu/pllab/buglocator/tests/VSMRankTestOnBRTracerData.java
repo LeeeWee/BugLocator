@@ -14,6 +14,7 @@ import edu.whu.pllab.buglocator.common.BugReport;
 import edu.whu.pllab.buglocator.common.BugReportRepository;
 import edu.whu.pllab.buglocator.common.SourceCode;
 import edu.whu.pllab.buglocator.common.SourceCodeRepository;
+import edu.whu.pllab.buglocator.common.TokenScore.ScoreType;
 import edu.whu.pllab.buglocator.evaluation.Evaluator;
 import edu.whu.pllab.buglocator.rankingmodel.IntegratedScore;
 import edu.whu.pllab.buglocator.similarity.Similarity;
@@ -59,13 +60,12 @@ public class VSMRankTestOnBRTracerData {
 			
 			
 			SourceCodeTfidfVectorizer codeTfidfVectorizer = new SourceCodeTfidfVectorizer(codeRepo.getSourceCodeMap());
-			codeTfidfVectorizer.setUsingOkapi(true);
+			codeTfidfVectorizer.setTokenScoreType(ScoreType.OKAPITFIDF);
 			codeTfidfVectorizer.train();
 			codeTfidfVectorizer.calculateTokensWeight(codeRepo.getSourceCodeMap());
 			
 			// calculate bug report tokens weight
 			BugReportTfidfVectorizer brTfidfVectorizer = new BugReportTfidfVectorizer(codeTfidfVectorizer.getTfidf());
-			brTfidfVectorizer.setUsingOkapi(false);
 			brTfidfVectorizer.calculateTokensWeight(brRepo.getBugReports());
 			
 			// all results using to evaluate

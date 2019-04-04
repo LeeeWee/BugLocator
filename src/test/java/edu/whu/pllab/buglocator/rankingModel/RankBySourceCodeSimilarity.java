@@ -23,6 +23,7 @@ import edu.whu.pllab.buglocator.common.BugReport;
 import edu.whu.pllab.buglocator.common.BugReportRepository;
 import edu.whu.pllab.buglocator.common.SourceCode;
 import edu.whu.pllab.buglocator.common.SourceCodeRepository;
+import edu.whu.pllab.buglocator.common.TokenScore.ScoreType;
 import edu.whu.pllab.buglocator.evaluation.Evaluator;
 import edu.whu.pllab.buglocator.evaluation.ExperimentResult;
 import edu.whu.pllab.buglocator.rankingmodel.IntegratedScore;
@@ -75,13 +76,12 @@ public class RankBySourceCodeSimilarity {
 //			codeRepo.saveSourceCodeRepoToXML(property.getCodeRepositoryXMLPath(), property.getProduct());
 			
 			SourceCodeTfidfVectorizer codeTfidfVectorizer = new SourceCodeTfidfVectorizer(codeRepo.getSourceCodeMap());
-			codeTfidfVectorizer.setUsingOkapi(true);
+			codeTfidfVectorizer.setTokenScoreType(ScoreType.OKAPITFIDF);
 			codeTfidfVectorizer.train();
 			codeTfidfVectorizer.calculateTokensWeight(codeRepo.getSourceCodeMap());
 			
 			// calculate bug report tokens weight
 			BugReportTfidfVectorizer brTfidfVectorizer = new BugReportTfidfVectorizer(codeTfidfVectorizer.getTfidf());
-			brTfidfVectorizer.setUsingOkapi(false);
 			brTfidfVectorizer.calculateTokensWeight(validBugReports);
 			
 			// all results using to evaluate
